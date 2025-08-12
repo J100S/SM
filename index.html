@@ -1,286 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Mini Social</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body {
-    background: linear-gradient(180deg,#071024,#05060a);
-    font-family: Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    color: white;
-  }
-  /* Force all text inside body to white, overriding Tailwind text-gray-* classes */
-  body * {
-    color: white !important;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Magic Social</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; background: #f0f2f5; }
+    .post, .comment, .user-suggest { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .post-header, .comment-header { display: flex; align-items: center; gap: 10px; }
+    .post-image { max-width: 100%; border-radius: 6px; margin-top: 5px; }
+    .btn { background: #007bff; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn.red { background: #dc3545; }
+    .btn.gray { background: #6c757d; }
+    .comments { margin-left: 50px; margin-top: 5px; }
+    .comment-form { display: flex; gap: 4px; margin-top: 5px; }
+    #sidebar { position: fixed; right: 20px; top: 20px; width: 200px; }
+  </style>
 </head>
-<body class="min-h-screen text-gray-100">
-  <header class="sticky top-0 bg-black/50 backdrop-blur border-b border-gray-800">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-violet-600 text-black font-extrabold flex items-center justify-center">MS</div>
-        <div class="text-lg font-bold">Mini Social</div>
-      </div>
-      <div class="flex items-center gap-3">
-        <div id="userInfo" class="hidden items-center gap-2">
-          <div id="userAvatar" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-accent font-bold"></div>
-          <div id="userName" class="text-sm"></div>
-          <button id="btnLogout" class="ml-2 px-3 py-1 rounded border border-gray-700">Logout</button>
-        </div>
-        <div id="authButtons" class="flex gap-2">
-          <button id="btnShowLogin" class="px-3 py-1 rounded bg-accent text-black">Sign In</button>
-          <button id="btnShowRegister" class="px-3 py-1 rounded border border-gray-700">Register</button>
-        </div>
-      </div>
-    </div>
-  </header>
+<body>
 
-  <main class="max-w-4xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <section class="lg:col-span-2 space-y-6">
-      <div id="composer" class="hidden bg-gray-900/40 border border-gray-800 rounded-xl p-4">
-        <div class="flex items-start gap-3">
-          <div id="composerAvatar" class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-accent flex items-center justify-center text-black font-bold">U</div>
-          <div class="flex-1">
-            <textarea id="postText" rows="3" class="w-full bg-transparent resize-none placeholder-gray-400 focus:outline-none" placeholder="What's happening?"></textarea>
-            <div class="mt-3 flex items-center gap-3">
-              <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 cursor-pointer">
-                <input id="postImage" type="file" accept="image/*" class="hidden" />
-                <span class="text-sm text-gray-300">Add image</span>
-              </label>
-              <button id="btnPost" class="ml-auto bg-accent text-black px-4 py-2 rounded-lg font-semibold">Post</button>
-            </div>
-            <div id="imagePreview" class="mt-3 hidden">
-              <img id="previewImg" class="max-h-48 rounded-md border border-gray-800" alt="preview"/>
-              <button id="removePreview" class="mt-2 text-xs text-red-400">Remove</button>
-            </div>
-          </div>
-        </div>
-      </div>
+<h1>Magic Social</h1>
 
-      <div id="feed" class="space-y-4"></div>
-    </section>
+<div id="auth-section">
+  <h3>Register</h3>
+  <form id="register-form">
+    <input name="name" placeholder="Name" required />
+    <input name="handle" placeholder="Handle" required />
+    <input name="email" placeholder="Email" required />
+    <input name="password" type="password" placeholder="Password" required />
+    <input name="avatar" type="file" accept="image/*" />
+    <button class="btn">Register</button>
+  </form>
 
-    <aside class="space-y-4">
-      <div id="authCard" class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
-        <div id="loginForm" class="space-y-3">
-          <h3 class="font-semibold text-white">Log in</h3>
-          <input id="loginEmail" placeholder="Email" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
-          <input id="loginPassword" type="password" placeholder="Password" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
-          <div class="flex gap-2">
-            <button id="btnLogin" class="flex-1 bg-accent text-black px-3 py-2 rounded-lg font-semibold">Sign In</button>
-            <button id="showRegisterFromLogin" class="flex-1 border border-gray-700 px-3 py-2 rounded-lg">Create</button>
-          </div>
-        </div>
+  <h3>Login</h3>
+  <form id="login-form">
+    <input name="email" placeholder="Email" required />
+    <input name="password" type="password" placeholder="Password" required />
+    <button class="btn">Login</button>
+  </form>
+</div>
 
-        <div id="registerForm" class="hidden space-y-3">
-          <h3 class="font-semibold text-white">Create an account</h3>
-          <input id="regName" placeholder="Full name" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
-          <input id="regHandle" placeholder="Handle (no @)" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
-          <input id="regEmail" placeholder="Email" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
-          <input id="regPassword" type="password" placeholder="Password" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
-          <div class="flex gap-2">
-            <button id="btnRegister" class="flex-1 bg-accent text-black px-3 py-2 rounded-lg font-semibold">Create</button>
-            <button id="showLoginFromRegister" class="flex-1 border border-gray-700 px-3 py-2 rounded-lg">Cancel</button>
-          </div>
-        </div>
-      </div>
+<div id="post-section" style="display:none;">
+  <form id="post-form" enctype="multipart/form-data">
+    <textarea name="text" placeholder="What's happening?" required></textarea><br>
+    <input type="file" name="image" accept="image/*" /><br>
+    <button class="btn">Post</button>
+  </form>
 
-      <div class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
-        <h4 class="font-semibold text-white">Suggested</h4>
-        <div id="suggested" class="mt-3 space-y-3 text-sm text-gray-300" aria-live="polite" aria-atomic="true">
-          <!-- Suggested users with follow/unfollow buttons rendered here -->
-        </div>
-      </div>
-    </aside>
-  </main>
+  <h2>Posts</h2>
+  <div id="posts"></div>
+</div>
 
-  <footer class="text-center text-xs text-gray-500 py-6">Local demo • Connects to your backend</footer>
+<div id="sidebar">
+  <h3>Suggested Users</h3>
+  <div id="suggested"></div>
+</div>
 
 <script>
-(() => {
-  const API_BASE = '';
-  let token = localStorage.getItem('ms_token') || null;
-  let currentUser = JSON.parse(localStorage.getItem('ms_user') || 'null');
-  let followings = new Set();
+const API = location.origin + '/api';
+let token = localStorage.getItem('token');
+let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 
-  // Helper functions
-  const el = id => document.getElementById(id);
-  const escapeHtml = s => (s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  const timeAgo = iso => {
-    const d = new Date(iso);
-    const diff = Math.floor((Date.now() - d) / 1000);
-    if (diff < 60) return diff + 's';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
-    return Math.floor(diff / 86400) + 'd';
-  };
-  const fetchJSON = async (url, opts = {}) => {
-    const res = await fetch(url, opts);
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Request failed');
-    return data;
-  };
+// ---------------- AUTH ----------------
+document.getElementById('register-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const res = await fetch(API + '/register', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.token) {
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    showApp();
+  } else alert(data.error || 'Registration failed');
+});
 
-  // DOM
-  const feedEl = el('feed');
-  const authButtons = el('authButtons');
-  const userInfo = el('userInfo');
-  const userAvatar = el('userAvatar');
-  const userName = el('userName');
-  const composer = el('composer');
-  const postText = el('postText');
-  const postImage = el('postImage');
-  const btnPost = el('btnPost');
-  const imagePreview = el('imagePreview');
-  const previewImg = el('previewImg');
-  const removePreview = el('removePreview');
-  const suggestedEl = el('suggested');
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = Object.fromEntries(new FormData(e.target));
+  const res = await fetch(API + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (data.token) {
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    showApp();
+  } else alert(data.error || 'Login failed');
+});
 
-  // Save composer draft
-  postText.value = localStorage.getItem('ms_draft') || '';
-  postText.addEventListener('input', () => {
-    localStorage.setItem('ms_draft', postText.value);
+// ---------------- POSTS ----------------
+document.getElementById('post-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const res = await fetch(API + '/posts', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: fd });
+  if (!res.ok) return alert('Post failed');
+  e.target.reset();
+});
+
+async function fetchPosts() {
+  const res = await fetch(API + '/posts');
+  const posts = await res.json();
+  renderPosts(posts);
+}
+
+function renderPosts(posts) {
+  const container = document.getElementById('posts');
+  container.innerHTML = '';
+  posts.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'post';
+    div.innerHTML = `
+      <div class="post-header">
+        <img src="${p.user_avatar || 'https://via.placeholder.com/40'}" class="avatar" />
+        <strong>@${p.user_handle}</strong> &nbsp; <small>${new Date(p.created_at).toLocaleString()}</small>
+      </div>
+      <div>${p.text || ''}</div>
+      ${p.image_url ? `<img src="${p.image_url}" class="post-image" />` : ''}
+      <div>
+        <button class="btn gray like-btn" data-id="${p.id}">❤️ ${p.likes || 0}</button>
+        <button class="btn gray comment-toggle" data-id="${p.id}">💬 ${p.comment_count}</button>
+        ${currentUser?.id === p.user_id ? `<button class="btn red delete-btn" data-id="${p.id}">Delete</button>` : ''}
+      </div>
+      <div class="comments" id="comments-${p.id}" style="display:none;"></div>
+    `;
+    container.appendChild(div);
   });
+}
 
-  // UI toggles
-  const showSignedIn = () => {
-    authButtons.classList.add('hidden');
-    userInfo.classList.remove('hidden');
-    composer.classList.remove('hidden');
-    userAvatar.textContent = (currentUser.name || currentUser.handle || '?')[0].toUpperCase();
-    userName.textContent = currentUser.name || currentUser.handle;
-  };
-  const showSignedOut = () => {
-    authButtons.classList.remove('hidden');
-    userInfo.classList.add('hidden');
-    composer.classList.add('hidden');
-  };
+// ---------------- COMMENTS ----------------
+async function fetchComments(postId) {
+  const res = await fetch(`${API}/posts/${postId}/comments`);
+  const comments = await res.json();
+  const container = document.getElementById(`comments-${postId}`);
+  container.innerHTML = comments.map(c => `
+    <div class="comment">
+      <div class="comment-header">
+        <img src="${c.user_avatar || 'https://via.placeholder.com/40'}" class="avatar" />
+        <strong>@${c.user_handle}</strong> &nbsp; <small>${new Date(c.created_at).toLocaleString()}</small>
+      </div>
+      <div>${c.text}</div>
+    </div>
+  `).join('') + (token ? `
+    <form class="comment-form" data-id="${postId}">
+      <input name="text" placeholder="Write a comment..." required />
+      <button class="btn gray">Send</button>
+    </form>
+  ` : '');
+}
 
-  // Render feed
-  function renderPosts(posts) {
-    feedEl.innerHTML = posts.map(p => `
-      <article data-id="${p.id}" class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
-        <div class="flex gap-3 items-start">
-          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-accent flex items-center justify-center text-black font-bold">${(p.user_name || p.user_handle || '?')[0].toUpperCase()}</div>
-          <div class="flex-1">
-            <div class="flex justify-between items-center">
-              <div>
-                <div class="font-bold">${escapeHtml(p.user_name || p.user_handle)}</div>
-                <div class="text-gray-400 text-sm">@${escapeHtml(p.user_handle)}</div>
-              </div>
-              <div class="text-xs text-gray-400" title="${new Date(p.created_at).toLocaleString()}">${timeAgo(p.created_at)}</div>
-            </div>
-            <p class="mt-2 text-gray-200 whitespace-pre-wrap">${escapeHtml(p.text || '')}</p>
-            ${p.image_url ? `<img src="${p.image_url}" loading="lazy" class="mt-3 rounded-md border border-gray-800 max-h-80 object-contain w-full"/>` : ''}
-            <div class="mt-3 flex gap-3 text-sm">
-              <button data-action="like" class="px-3 py-1 rounded-full border border-gray-700">Like <span class="ml-1 text-yellow-300">${p.likes || 0}</span></button>
-              <button data-action="comment" class="px-3 py-1 rounded-full border border-gray-700">Comment</button>
-              ${currentUser && currentUser.id === p.user_id ? `<button data-action="delete" class="px-3 py-1 rounded-full border border-red-700 text-red-400">Delete</button>` : ''}
-            </div>
-            <div class="mt-2 comments text-sm text-gray-300"></div>
-          </div>
-        </div>
-      </article>
-    `).join('');
+// ---------------- SUGGESTED USERS ----------------
+async function fetchSuggested() {
+  const res = await fetch(API + '/users/suggested');
+  const users = await res.json();
+  document.getElementById('suggested').innerHTML = users.map(u => `
+    <div class="user-suggest">
+      <img src="${u.avatar_url || 'https://via.placeholder.com/40'}" class="avatar" />
+      @${u.handle}
+    </div>
+  `).join('');
+}
+
+// ---------------- EVENTS ----------------
+document.addEventListener('click', async e => {
+  if (e.target.classList.contains('delete-btn')) {
+    await fetch(API + '/posts/' + e.target.dataset.id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
   }
-
-  // Event delegation for post actions
-  feedEl.addEventListener('click', async e => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
-    const post = btn.closest('[data-id]');
-    const postId = post.dataset.id;
-    const action = btn.dataset.action;
-
-    try {
-      if (action === 'like') {
-        const span = btn.querySelector('span');
-        span.textContent = parseInt(span.textContent) + 1; // instant increment
-        const data = await fetchJSON(`/api/posts/${postId}/like`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-        span.textContent = data.likes;
-      }
-      if (action === 'delete') {
-        if (!confirm('Delete this post?')) return;
-        await fetchJSON(`/api/posts/${postId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      }
-      if (action === 'comment') {
-        const commentsDiv = post.querySelector('.comments');
-        const form = document.createElement('div');
-        form.innerHTML = `
-          <input type="text" class="bg-gray-800 border border-gray-700 rounded px-2 py-1 w-full" placeholder="Write a comment..."/>
-          <button class="mt-1 px-3 py-1 rounded bg-accent text-black">Send</button>
-        `;
-        commentsDiv.innerHTML = '';
-        commentsDiv.appendChild(form);
-        const input = form.querySelector('input');
-        const sendBtn = form.querySelector('button');
-        sendBtn.addEventListener('click', async () => {
-          if (!input.value.trim()) return;
-          await fetchJSON(`/api/posts/${postId}/comment`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: input.value.trim() })
-          });
-          input.value = '';
-        });
-      }
-    } catch (err) {
-      alert(err.message);
+  if (e.target.classList.contains('like-btn')) {
+    await fetch(API + `/posts/${e.target.dataset.id}/like`, { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+  }
+  if (e.target.classList.contains('comment-toggle')) {
+    const cid = e.target.dataset.id;
+    const cdiv = document.getElementById(`comments-${cid}`);
+    if (cdiv.style.display === 'none') {
+      await fetchComments(cid);
+      cdiv.style.display = 'block';
+    } else {
+      cdiv.style.display = 'none';
     }
-  });
+  }
+});
+document.addEventListener('submit', async e => {
+  if (e.target.classList.contains('comment-form')) {
+    e.preventDefault();
+    const postId = e.target.dataset.id;
+    const body = { text: e.target.text.value };
+    await fetch(API + `/posts/${postId}/comments`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    e.target.reset();
+    await fetchComments(postId);
+  }
+});
 
-  // Composer image preview with file size
-  postImage.addEventListener('change', () => {
-    if (postImage.files.length) {
-      const file = postImage.files[0];
-      if (file.size > 5 * 1024 * 1024) alert('Image too large (>5MB)');
-      previewImg.src = URL.createObjectURL(file);
-      previewImg.onload = () => URL.revokeObjectURL(previewImg.src);
-      imagePreview.classList.remove('hidden');
-    }
-  });
-  removePreview.addEventListener('click', () => {
-    postImage.value = '';
-    imagePreview.classList.add('hidden');
-  });
+// ---------------- LOOP ----------------
+function showApp() {
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('post-section').style.display = 'block';
+}
+if (token) showApp();
 
-  // Create post
-  btnPost.addEventListener('click', async () => {
-    if (!postText.value.trim() && postImage.files.length === 0) return alert('Write something or add an image');
-    const formData = new FormData();
-    formData.append('text', postText.value.trim());
-    if (postImage.files.length) formData.append('image', postImage.files[0]);
-    await fetchJSON('/api/posts', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
-    postText.value = '';
-    postImage.value = '';
-    localStorage.removeItem('ms_draft');
-    imagePreview.classList.add('hidden');
-  });
-
-  // Fetch posts
-  const fetchPosts = async () => {
-    try {
-      const posts = await fetchJSON('/api/posts');
-      renderPosts(posts);
-    } catch (err) { console.error(err); }
-  };
-
-  // Initial UI
-  if (token && currentUser) showSignedIn(); else showSignedOut();
+setInterval(() => {
   fetchPosts();
+  fetchSuggested();
+}, 250);
 
-  // Magic 250ms interval
-  setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      fetchPosts();
-    }
-  }, 250);
-})();
 </script>
-
-
 </body>
 </html>
