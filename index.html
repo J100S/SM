@@ -2,10 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Mini Social</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>body{background:linear-gradient(180deg,#071024,#05060a);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}</style>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Mini Social</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    background: linear-gradient(180deg,#071024,#05060a);
+    font-family: Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    color: white;
+  }
+  /* Force all text inside body to white, overriding Tailwind text-gray-* classes */
+  body * {
+    color: white !important;
+  }
+</style>
 </head>
 <body class="min-h-screen text-gray-100">
   <header class="sticky top-0 bg-black/50 backdrop-blur border-b border-gray-800">
@@ -90,6 +100,7 @@
   <footer class="text-center text-xs text-gray-500 py-6">Local demo • Connects to your backend</footer>
 
 <script>
+
 (() => {
   const API_BASE = '';
   let token = localStorage.getItem('ms_token') || null;
