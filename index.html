@@ -1,322 +1,508 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mini Social</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Scrollbar for comments */
+    #comments-container {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
 
-<nav class="bg-slate-800 p-4 flex justify-between items-center">
-  <div class="flex items-center gap-3">
-    <div class="text-xl font-bold">Mini Social</div>
-  </div>
+<nav class="bg-slate-800 p-4 flex items-center justify-between">
+  <div class="text-xl font-bold text-sky-400 cursor-pointer" onclick="goHome()">Mini Social</div>
   <div id="nav-right" class="hidden items-center gap-3">
-    <img id="nav-avatar" class="w-9 h-9 rounded-full" src="" alt="avatar"/>
+    <img id="nav-avatar" class="w-9 h-9 rounded-full" src="" alt="avatar" />
     <div id="nav-name" class="text-sm"></div>
-    <button onclick="logout()" class="bg-rose-500 px-3 py-1 rounded">Logout</button>
+    <button id="logout-btn" class="ml-4 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm" onclick="logout()">Logout</button>
   </div>
 </nav>
 
-<!-- AUTH -->
-<section id="auth-container" class="max-w-2xl mx-auto mt-8 p-6">
-  <div id="login-card" class="bg-slate-800 rounded-lg p-6 shadow">
-    <h2 class="text-2xl mb-4">Login</h2>
-    <input id="email" placeholder="Email" class="w-full p-2 mb-3 rounded bg-slate-700"/>
-    <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-3 rounded bg-slate-700"/>
-    <div class="flex gap-2">
-      <button onclick="login()" class="bg-sky-500 px-4 py-2 rounded">Login</button>
-      <button onclick="showRegister()" class="bg-transparent border border-slate-600 px-4 py-2 rounded">Register</button>
-    </div>
-  </div>
-
-  <div id="register-card" class="hidden bg-slate-800 rounded-lg p-6 shadow mt-6">
-    <h2 class="text-2xl mb-4">Register</h2>
-    <input id="reg-name" placeholder="Name" class="w-full p-2 mb-2 rounded bg-slate-700"/>
-    <input id="reg-handle" placeholder="Handle" class="w-full p-2 mb-2 rounded bg-slate-700"/>
-    <input id="reg-email" placeholder="Email" class="w-full p-2 mb-2 rounded bg-slate-700"/>
-    <input id="reg-password" type="password" placeholder="Password" class="w-full p-2 mb-2 rounded bg-slate-700"/>
-    <input id="reg-avatar" type="file" class="mb-3"/>
-    <div class="flex gap-2">
-      <button onclick="register()" class="bg-emerald-500 px-4 py-2 rounded">Create account</button>
-      <button onclick="showLogin()" class="bg-transparent border border-slate-600 px-4 py-2 rounded">Back</button>
-    </div>
-  </div>
-</section>
-
-<!-- APP -->
-<main id="app" class="hidden max-w-5xl mx-auto mt-6 grid grid-cols-3 gap-6">
-  <!-- Feed -->
-  <div class="col-span-2">
-    <div class="bg-slate-800 p-4 rounded mb-4">
-      <textarea id="post-text" placeholder="What's happening?" class="w-full p-3 rounded bg-slate-700"></textarea>
-      <input id="post-image" type="file" class="mt-2"/>
-      <div class="flex justify-end mt-2">
-        <button onclick="createPost()" class="bg-sky-500 px-4 py-2 rounded">Post</button>
+<main class="flex-grow max-w-4xl mx-auto p-6 flex gap-6">
+  <!-- Left: Posts & New Post -->
+  <section class="flex-grow flex flex-col gap-6">
+    <!-- Register/Login toggle -->
+    <div id="auth-section" class="bg-slate-800 p-6 rounded space-y-4 max-w-md mx-auto">
+      <div class="flex justify-center gap-4 mb-4">
+        <button id="show-login" class="px-4 py-2 rounded bg-sky-600 hover:bg-sky-700 font-semibold">Login</button>
+        <button id="show-register" class="px-4 py-2 rounded bg-slate-600 hover:bg-slate-700 font-semibold">Register</button>
       </div>
+      <form id="login-form" class="space-y-4">
+        <input id="login-email" type="email" placeholder="Email" required
+          class="w-full p-2 rounded bg-slate-700 text-white"/>
+        <input id="login-password" type="password" placeholder="Password" required
+          class="w-full p-2 rounded bg-slate-700 text-white"/>
+        <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 py-2 rounded font-semibold">Login</button>
+      </form>
+      <form id="register-form" class="space-y-4 hidden" enctype="multipart/form-data">
+        <input id="reg-name" type="text" placeholder="Name" required
+          class="w-full p-2 rounded bg-slate-700 text-white"/>
+        <input id="reg-handle" type="text" placeholder="Handle (no spaces)" required
+          class="w-full p-2 rounded bg-slate-700 text-white"/>
+        <input id="reg-email" type="email" placeholder="Email" required
+          class="w-full p-2 rounded bg-slate-700 text-white"/>
+        <input id="reg-password" type="password" placeholder="Password" required
+          class="w-full p-2 rounded bg-slate-700 text-white"/>
+        <label class="block text-sm text-slate-400">Avatar (optional)</label>
+        <input id="reg-avatar" type="file" accept="image/*" class="w-full text-slate-400"/>
+        <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 py-2 rounded font-semibold">Register</button>
+      </form>
+      <div id="auth-error" class="text-red-500 text-sm mt-2"></div>
     </div>
 
-    <div id="feed"></div>
-  </div>
+    <!-- New Post Form (visible only if logged in) -->
+    <form id="new-post-form" class="bg-slate-800 p-4 rounded space-y-3 hidden" enctype="multipart/form-data">
+      <textarea id="post-text" rows="3" placeholder="What's on your mind?" 
+        class="w-full p-2 rounded bg-slate-700 text-white resize-none"></textarea>
+      <input id="post-image" type="file" accept="image/*" />
+      <button type="submit" class="bg-sky-600 hover:bg-sky-700 py-2 px-4 rounded font-semibold">Post</button>
+      <div id="post-error" class="text-red-500 text-sm"></div>
+    </form>
 
-  <!-- Sidebar -->
-  <aside>
-    <div class="bg-slate-800 p-4 rounded mb-4">
-      <h3 class="text-lg font-semibold mb-3">Suggested</h3>
-      <div id="suggested-users" class="space-y-3"></div>
-    </div>
+    <!-- Posts List -->
+    <div id="posts-container" class="space-y-6"></div>
+  </section>
 
-    <div class="bg-slate-800 p-4 rounded">
-      <h3 class="text-lg font-semibold mb-2">Your ID (for debug)</h3>
-      <div id="my-id" class="text-sm text-slate-300"></div>
-    </div>
+  <!-- Right Sidebar: Suggested users -->
+  <aside class="w-80 bg-slate-800 p-4 rounded space-y-4">
+    <h2 class="text-2xl font-semibold mb-4">Suggested Users</h2>
+    <div id="suggested-users" class="space-y-3"></div>
   </aside>
 </main>
 
+<!-- Comments Modal -->
+<div id="comments-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex flex-col max-w-xl w-full max-h-[80vh] mx-auto top-[10vh] rounded overflow-hidden">
+  <div class="bg-slate-900 p-4 flex justify-between items-center">
+    <h3 id="comments-modal-user" class="text-lg font-semibold text-slate-200"></h3>
+    <button onclick="closeComments()" class="text-red-600 font-bold text-xl">×</button>
+  </div>
+  <div id="comments-container" class="bg-slate-800 flex-grow p-4 space-y-3 overflow-y-auto"></div>
+  <form id="comment-form" class="bg-slate-900 p-4 flex gap-2">
+    <input id="comment-input" type="text" placeholder="Add a comment..." required class="flex-grow rounded p-2 bg-slate-700 text-white"/>
+    <button type="submit" class="bg-sky-600 hover:bg-sky-700 px-4 rounded font-semibold">Send</button>
+  </form>
+</div>
+
 <script>
-const API = ''; // Leave empty when frontend served by same server. If separate, set to backend base URL.
-let token = localStorage.getItem('token');
-let me = null;
+const API = '';
 
-if (token) {
-  // decode token to get user id (quickly) OR rely on login/register response to set me.
-  // We'll fetch a quick profile by reading token payload if needed.
-  // For simplicity the backend returns user object on login/register; so if page reloads we need to fetch suggested to get my id.
-  showApp();
-  fetchSuggested();
-  fetchFeed();
-}
-
-function showRegister(){
-  document.getElementById('login-card').classList.add('hidden');
-  document.getElementById('register-card').classList.remove('hidden');
-}
-function showLogin(){
-  document.getElementById('register-card').classList.add('hidden');
-  document.getElementById('login-card').classList.remove('hidden');
-}
-function showApp(user){
-  document.getElementById('auth-container').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  document.getElementById('nav-right').classList.remove('hidden');
-  if (user) {
-    me = user;
-    document.getElementById('nav-avatar').src = API + (user.avatar_url || '/uploads/default.png');
-    document.getElementById('nav-name').textContent = user.name;
-    document.getElementById('my-id').textContent = user.id;
-  }
-}
-
-function logout(){
-  localStorage.removeItem('token');
-  token = null;
-  me = null;
-  location.reload();
-}
-
-async function login(){
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const res = await fetch(API + '/api/login', {
-    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email, password })
-  });
-  const data = await res.json();
-  if (data.token){
-    localStorage.setItem('token', data.token);
-    token = data.token;
-    showApp(data.user);
-    fetchFeed();
-    fetchSuggested();
-  } else {
-    alert(data.error || 'Login failed');
-  }
-}
-
-async function register(){
-  const form = new FormData();
-  form.append('name', document.getElementById('reg-name').value);
-  form.append('handle', document.getElementById('reg-handle').value);
-  form.append('email', document.getElementById('reg-email').value);
-  form.append('password', document.getElementById('reg-password').value);
-  const avatar = document.getElementById('reg-avatar').files[0];
-  if (avatar) form.append('avatar', avatar);
-
-  const res = await fetch(API + '/api/register', { method: 'POST', body: form });
-  const data = await res.json();
-  if (data.token){
-    localStorage.setItem('token', data.token);
-    token = data.token;
-    showApp(data.user);
-    fetchFeed();
-    fetchSuggested();
-  } else {
-    alert(data.error || 'Register failed');
-  }
-}
-
-async function fetchFeed(){
-  const res = await fetch(API + '/api/posts');
-  const posts = await res.json();
-  const feed = document.getElementById('feed');
-  feed.innerHTML = '';
-  posts.forEach(p => {
-    feed.insertAdjacentHTML('beforeend', postHTML(p));
-  });
-}
-
-function postHTML(p){
-  const imageMark = p.image_url ? `<img src="${API + p.image_url}" class="mt-3 rounded max-h-96 object-cover w-full"/>` : '';
-  const avatar = p.user_avatar ? API + p.user_avatar : '/uploads/default.png';
-  return `
-  <article class="bg-slate-800 p-4 rounded mb-4" id="post-${p.id}">
-    <div class="flex items-center gap-3">
-      <img src="${avatar}" class="w-10 h-10 rounded-full"/>
-      <div><div class="font-semibold">${escapeHtml(p.user_name)}</div><div class="text-sm text-slate-400">@${escapeHtml(p.user_handle)}</div></div>
-    </div>
-
-    <div class="mt-3 text-slate-200">${escapeHtml(p.text || '')}</div>
-    ${imageMark}
-
-    <div class="flex gap-4 items-center mt-3 text-sm text-slate-300">
-      <button onclick="likePost('${p.id}')" class="flex items-center gap-2">❤️ <span id="likes-${p.id}">${p.likes || 0}</span></button>
-      <button onclick="toggleComments('${p.id}')" class="flex items-center gap-2">💬 <span>${p.comment_count || 0}</span></button>
-      <div class="ml-auto text-xs text-slate-400">${new Date(p.created_at).toLocaleString()}</div>
-    </div>
-
-    <div id="comments-${p.id}" class="hidden mt-3"></div>
-  </article>
-  `;
-}
-
-function escapeHtml(s){
+function escapeHtml(s) {
   if (!s) return '';
   return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-async function createPost(){
-  if (!token){ alert('Login first'); return; }
-  const form = new FormData();
-  form.append('text', document.getElementById('post-text').value);
-  const img = document.getElementById('post-image').files[0];
-  if (img) form.append('image', img);
-  const res = await fetch(API + '/api/posts', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
-    body: form
-  });
-  if (res.ok){
-    document.getElementById('post-text').value = '';
-    document.getElementById('post-image').value = '';
-    fetchFeed();
-  } else {
-    const e = await res.json();
-    alert(e.error || 'Failed to create post');
-  }
+// NAVIGATION
+function goHome() {
+  window.history.pushState({}, '', '/');
+  window.location.reload();
 }
 
-async function likePost(postId){
-  if (!token){ alert('Login first'); return; }
-  const res = await fetch(API + '/api/posts/' + postId + '/like', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token }
-  });
-  if (res.ok){
+// --- AUTH MANAGEMENT ---
+function setLoggedIn(user, token) {
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(user));
+  document.getElementById('nav-avatar').src = user.avatar_url ? API + user.avatar_url : '/uploads/default.png';
+  document.getElementById('nav-name').textContent = user.name;
+  document.getElementById('nav-right').classList.remove('hidden');
+
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('new-post-form').style.display = 'block';
+  fetchPosts();
+  fetchSuggested();
+}
+
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  document.getElementById('nav-right').classList.add('hidden');
+  document.getElementById('auth-section').style.display = 'block';
+  document.getElementById('new-post-form').style.display = 'none';
+  document.getElementById('posts-container').innerHTML = '';
+  document.getElementById('suggested-users').innerHTML = '';
+}
+
+// Toggle between login/register forms
+document.getElementById('show-login').onclick = () => {
+  document.getElementById('login-form').style.display = 'block';
+  document.getElementById('register-form').style.display = 'none';
+  clearAuthError();
+};
+document.getElementById('show-register').onclick = () => {
+  document.getElementById('login-form').style.display = 'none';
+  document.getElementById('register-form').style.display = 'block';
+  clearAuthError();
+};
+function clearAuthError() {
+  document.getElementById('auth-error').textContent = '';
+}
+
+// --- LOGIN ---
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearAuthError();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+
+  try {
+    const res = await fetch(API + '/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Login failed');
+    }
     const data = await res.json();
-    const el = document.getElementById('likes-' + postId);
-    if (el) el.textContent = data.likes;
+    setLoggedIn(data.user, data.token);
+  } catch(err) {
+    document.getElementById('auth-error').textContent = err.message;
   }
-}
+});
 
-async function toggleComments(postId){
-  const container = document.getElementById('comments-' + postId);
-  if (!container.classList.contains('hidden')){
-    container.classList.add('hidden');
+// --- REGISTER ---
+document.getElementById('register-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearAuthError();
+
+  const name = document.getElementById('reg-name').value.trim();
+  const handle = document.getElementById('reg-handle').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value.trim();
+  const avatarFile = document.getElementById('reg-avatar').files[0];
+
+  if (!name || !handle || !email || !password) {
+    document.getElementById('auth-error').textContent = 'Please fill all required fields.';
     return;
   }
-  // fetch comments
-  const res = await fetch(API + `/api/posts/${postId}/comments`);
-  const comments = await res.json();
-  container.innerHTML = `
-    <div class="space-y-2">
-      ${comments.map(c => `
-        <div class="bg-slate-700 p-2 rounded">
-          <div class="text-sm font-semibold">${escapeHtml(c.user_name)} <span class="text-xs text-slate-400">@${escapeHtml(c.user_handle)}</span></div>
-          <div class="mt-1 text-slate-200">${escapeHtml(c.text)}</div>
-        </div>
-      `).join('')}
-      <div class="flex gap-2 mt-2">
-        <input id="comment-input-${postId}" placeholder="Write a comment..." class="flex-1 p-2 rounded bg-slate-700"/>
-        <button onclick="addComment('${postId}')" class="bg-sky-500 px-3 py-1 rounded">Post</button>
+
+  try {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('handle', handle);
+    formData.append('email', email);
+    formData.append('password', password);
+    if (avatarFile) formData.append('avatar', avatarFile);
+
+    const res = await fetch(API + '/api/register', {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Registration failed');
+    }
+    const data = await res.json();
+    setLoggedIn(data.user, data.token);
+  } catch(err) {
+    document.getElementById('auth-error').textContent = err.message;
+  }
+});
+
+// --- NEW POST ---
+document.getElementById('new-post-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  document.getElementById('post-error').textContent = '';
+  const text = document.getElementById('post-text').value.trim();
+  const imageFile = document.getElementById('post-image').files[0];
+  if (!text && !imageFile) {
+    document.getElementById('post-error').textContent = 'Post cannot be empty';
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Please login to post');
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('text', text);
+    if (imageFile) formData.append('image', imageFile);
+
+    const res = await fetch(API + '/api/posts', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Post failed');
+    }
+    // Clear form
+    document.getElementById('post-text').value = '';
+    document.getElementById('post-image').value = '';
+    // Refresh posts
+    fetchPosts();
+  } catch (err) {
+    document.getElementById('post-error').textContent = err.message;
+  }
+});
+
+// --- POSTS ---
+function postHTML(p) {
+  const avatar = p.user_avatar ? API + p.user_avatar : '/uploads/default.png';
+  const imageMark = p.image_url ? `<img src="${API + p.image_url}" class="mt-3 rounded max-h-96 object-cover w-full" alt="post image"/>` : '';
+  const likedClass = p.liked_by_user ? 'text-red-500' : 'text-slate-400';
+  const likeCount = p.likes || 0;
+  return `
+  <article class="bg-slate-800 p-4 rounded">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="goToProfile('${p.user_handle}')">
+      <img src="${avatar}" alt="avatar" class="w-10 h-10 rounded-full"/>
+      <div>
+        <div class="font-semibold text-slate-200">${escapeHtml(p.user_name)}</div>
+        <div class="text-sm text-sky-400 hover:underline">@${escapeHtml(p.user_handle)}</div>
       </div>
     </div>
+    <div class="mt-3 text-slate-200 whitespace-pre-wrap">${escapeHtml(p.text || '')}</div>
+    ${imageMark}
+    <div class="mt-3 flex items-center justify-between text-sm text-slate-400">
+      <div>${new Date(p.created_at).toLocaleString()}</div>
+      <div class="flex items-center gap-6">
+        <button class="flex items-center gap-1 focus:outline-none" onclick="event.stopPropagation(); toggleLike('${p.id}', this)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" 
+               stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 ${likedClass}" viewBox="0 0 24 24">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span>${likeCount}</span>
+        </button>
+        <button onclick="event.stopPropagation(); openComments('${p.id}', '${escapeHtml(p.user_handle)}')"
+          class="text-slate-400 hover:text-sky-400">Comments (${p.comment_count || 0})</button>
+      </div>
+    </div>
+  </article>
   `;
-  container.classList.remove('hidden');
 }
 
-async function addComment(postId){
-  if (!token){ alert('Login first'); return; }
-  const textEl = document.getElementById(`comment-input-${postId}`);
-  const text = textEl.value.trim();
-  if (!text) return;
-  const res = await fetch(API + `/api/posts/${postId}/comments`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify({ text })
-  });
-  if (res.ok){
-    toggleComments(postId); // will refresh comments
-    toggleComments(postId);
-  } else {
-    const e = await res.json();
-    alert(e.error || 'Failed to post comment');
+async function fetchPosts() {
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(API + '/api/posts', { headers });
+    if (!res.ok) throw new Error('Failed to load posts');
+    const posts = await res.json();
+
+    // Mark posts liked by logged user
+    let likedPosts = [];
+    if (token) {
+      // We don't have a dedicated API for user's liked posts, so we skip this for now.
+      // You can extend backend to provide liked posts per user if needed.
+    }
+    const container = document.getElementById('posts-container');
+    container.innerHTML = '';
+    posts.forEach(p => {
+      p.liked_by_user = false; // fallback - no info yet
+      container.insertAdjacentHTML('beforeend', postHTML(p));
+    });
+  } catch (err) {
+    alert('Error loading posts');
+    console.error(err);
   }
 }
 
-async function fetchSuggested(){
-  const res = await fetch(API + '/api/users/suggested', {
-    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-  });
-  const users = await res.json();
-  const cont = document.getElementById('suggested-users');
-  cont.innerHTML = '';
-  users.forEach(u => {
-    const avatar = u.avatar_url ? API + u.avatar_url : '/uploads/default.png';
-    const isFollowing = !!u.is_following;
-    const btnText = isFollowing ? 'Unfollow' : 'Follow';
-    const btnClass = isFollowing ? 'bg-rose-500' : 'bg-emerald-500';
-    cont.insertAdjacentHTML('beforeend', `
-      <div class="flex items-center justify-between gap-3">
+// --- LIKE ---
+async function toggleLike(postId, btn) {
+  btn.disabled = true;
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please log in to like posts');
+      btn.disabled = false;
+      return;
+    }
+    const res = await fetch(API + '/api/posts/' + postId + '/like', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('Like failed');
+    const data = await res.json();
+    // Update like count in button
+    const span = btn.querySelector('span');
+    if (span) span.textContent = data.likes;
+    // Toggle heart color
+    const svg = btn.querySelector('svg');
+    if (svg) {
+      if (btn.classList.contains('text-red-500')) {
+        btn.classList.remove('text-red-500');
+        btn.classList.add('text-slate-400');
+      } else {
+        btn.classList.remove('text-slate-400');
+        btn.classList.add('text-red-500');
+      }
+    }
+  } catch (e) {
+    alert('Error toggling like');
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+// --- COMMENTS ---
+let currentCommentPostId = null;
+function openComments(postId, userHandle) {
+  currentCommentPostId = postId;
+  document.getElementById('comments-modal-user').textContent = `Comments on @${userHandle}`;
+  document.getElementById('comments-container').innerHTML = 'Loading...';
+  document.getElementById('comments-modal').classList.remove('hidden');
+  fetchComments(postId);
+}
+
+function closeComments() {
+  document.getElementById('comments-modal').classList.add('hidden');
+  currentCommentPostId = null;
+}
+
+async function fetchComments(postId) {
+  try {
+    const res = await fetch(API + '/api/posts/' + postId + '/comments');
+    if (!res.ok) throw new Error('Failed to load comments');
+    const comments = await res.json();
+    const cont = document.getElementById('comments-container');
+    if (comments.length === 0) {
+      cont.innerHTML = '<div class="text-slate-400">No comments yet.</div>';
+      return;
+    }
+    cont.innerHTML = '';
+    comments.forEach(c => {
+      const avatar = c.user_avatar ? API + c.user_avatar : '/uploads/default.png';
+      cont.insertAdjacentHTML('beforeend', `
         <div class="flex items-center gap-3">
-          <img src="${avatar}" class="w-10 h-10 rounded-full"/>
+          <img src="${avatar}" alt="avatar" class="w-8 h-8 rounded-full"/>
           <div>
-            <div class="font-medium">${escapeHtml(u.name)}</div>
-            <div class="text-sm text-slate-400">@${escapeHtml(u.handle)}</div>
+            <div class="text-sm font-semibold text-slate-200 cursor-pointer" onclick="goToProfile('${c.user_handle}')">@${escapeHtml(c.user_handle)}</div>
+            <div class="text-sm text-slate-300">${escapeHtml(c.text)}</div>
+            <div class="text-xs text-slate-400">${new Date(c.created_at).toLocaleString()}</div>
           </div>
         </div>
-        <div>
-          <button onclick="toggleFollow('${u.id}', this)" class="${btnClass} px-3 py-1 rounded text-sm">${btnText}</button>
-        </div>
-      </div>
-    `);
-  });
-}
-
-async function toggleFollow(targetId, btn){
-  if (!token){ alert('Login first'); return; }
-  const currentlyFollowing = btn.textContent.trim().toLowerCase() === 'unfollow';
-  const url = API + `/api/users/${targetId}/${currentlyFollowing ? 'unfollow' : 'follow'}`;
-  const res = await fetch(url, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-  if (res.ok){
-    // toggle UI
-    btn.textContent = currentlyFollowing ? 'Follow' : 'Unfollow';
-    btn.classList.toggle('bg-emerald-500');
-    btn.classList.toggle('bg-rose-500');
-  } else {
-    const e = await res.json();
-    alert(e.error || 'Failed');
+      `);
+    });
+  } catch (e) {
+    alert('Error loading comments');
+    console.error(e);
   }
 }
+
+document.getElementById('comment-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const input = document.getElementById('comment-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Please log in to comment');
+    return;
+  }
+  if (!currentCommentPostId) {
+    alert('No post selected');
+    return;
+  }
+  try {
+    const res = await fetch(API + '/api/posts/' + currentCommentPostId + '/comments', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to add comment');
+    }
+    input.value = '';
+    fetchComments(currentCommentPostId);
+  } catch (e) {
+    alert(e.message);
+  }
+});
+
+// --- FOLLOW / UNFOLLOW ---
+async function toggleFollow(userId, btn) {
+  btn.disabled = true;
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please log in to follow users');
+      btn.disabled = false;
+      return;
+    }
+    const res = await fetch(API + '/api/users/' + userId + '/follow', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('Follow/unfollow failed');
+    const data = await res.json();
+    btn.textContent = data.following ? 'Unfollow' : 'Follow';
+  } catch (e) {
+    alert('Error toggling follow');
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+// --- SUGGESTED USERS ---
+async function fetchSuggested() {
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(API + '/api/users/suggested', { headers });
+    if (!res.ok) throw new Error('Failed to load suggested users');
+    const users = await res.json();
+    const cont = document.getElementById('suggested-users');
+    cont.innerHTML = '';
+    users.forEach(u => {
+      const avatar = u.avatar_url ? API + u.avatar_url : '/uploads/default.png';
+      const isFollowing = u.is_following === 1;
+      const btnClass = isFollowing ? 'bg-red-600 hover:bg-red-700' : 'bg-sky-600 hover:bg-sky-700';
+      const btnText = isFollowing ? 'Unfollow' : 'Follow';
+
+      cont.insertAdjacentHTML('beforeend', `
+        <div class="flex items-center justify-between gap-3 cursor-pointer" onclick="goToProfile('${u.handle}')">
+          <div class="flex items-center gap-3">
+            <img src="${avatar}" alt="avatar" class="w-10 h-10 rounded-full"/>
+            <div>
+              <div class="font-medium text-slate-200">${escapeHtml(u.name)}</div>
+              <div class="text-sm text-slate-400">@${escapeHtml(u.handle)}</div>
+              <div class="text-xs text-slate-400">${u.follower_count} follower${u.follower_count !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          <button onclick="event.stopPropagation(); toggleFollow('${u.id}', this)" 
+                  class="${btnClass} px-3 py-1 rounded text-sm">${btnText}</button>
+        </div>
+      `);
+    });
+  } catch (e) {
+    alert('Error loading suggested users');
+    console.error(e);
+  }
+}
+
+// --- PROFILE NAVIGATION ---
+function goToProfile(handle) {
+  window.location.href = '/profile.html?handle=' + encodeURIComponent(handle);
+}
+
+// --- INITIAL LOAD ---
+window.onload = () => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (token && user) {
+    setLoggedIn(user, token);
+  } else {
+    logout();
+  }
+};
 </script>
+
 </body>
 </html>
