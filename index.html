@@ -1,245 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mini Social</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Darker gradient background */
-    body {
-      background: linear-gradient(180deg, #0a101f, #050610);
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      color: #e0e7ff; /* lighter text */
-      min-height: 100vh;
-    }
-
-    /* Remove force white on everything - let Tailwind classes do their thing */
-    /* We'll manually adjust colors where needed */
-
-    /* Header styling */
-    header {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: saturate(180%) blur(12px);
-      border-bottom: 1px solid #2e3a59;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
-      z-index: 50;
-    }
-
-    /* Accent color variable */
-    :root {
-      --color-accent: #4ac1ff;
-      --color-accent-dark: #3a9bd6;
-      --color-accent-light: #6ed1ff;
-      --color-gray-dark: #1e293b;
-      --color-gray-medium: #334155;
-      --color-gray-light: #cbd5e1;
-    }
-
-    /* Accent backgrounds for gradients */
-    .from-accent {
-      --tw-gradient-from: var(--color-accent);
-      --tw-gradient-stops: var(--tw-gradient-from), var(--color-accent-light);
-    }
-    .to-accent {
-      --tw-gradient-to: var(--color-accent-light);
-    }
-
-    /* Buttons */
-    button {
-      transition: background-color 0.25s ease, color 0.25s ease;
-    }
-    button:hover:not(:disabled) {
-      background-color: var(--color-accent-dark);
-      color: #fff;
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Inputs */
-    input, textarea {
-      background-color: var(--color-gray-dark);
-      border: 1px solid var(--color-gray-medium);
-      color: var(--color-gray-light);
-      transition: border-color 0.3s ease;
-    }
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: var(--color-accent);
-      box-shadow: 0 0 8px var(--color-accent);
-      background-color: #111827;
-      color: #e0e7ff;
-    }
-
-    /* Scrollbar (nice subtle) */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #111827;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--color-accent);
-      border-radius: 20px;
-    }
-
-    /* Post article hover effect */
-    article:hover {
-      background-color: rgba(74, 193, 255, 0.1);
-      box-shadow: 0 4px 15px rgba(74, 193, 255, 0.2);
-      border-color: var(--color-accent);
-      transition: all 0.3s ease;
-    }
-
-    /* Suggested user buttons */
-    #suggested button {
-      font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 9999px;
-      border: none;
-      cursor: pointer;
-    }
-    #suggested button.follow {
-      background-color: var(--color-accent);
-      color: #000;
-    }
-    #suggested button.follow:hover {
-      background-color: var(--color-accent-dark);
-    }
-    #suggested button.unfollow {
-      background-color: #dc2626; /* red-600 */
-      color: white;
-    }
-    #suggested button.unfollow:hover {
-      background-color: #b91c1c; /* red-700 */
-    }
-
-    /* Composer textarea */
-    #postText {
-      font-size: 1.05rem;
-      line-height: 1.5;
-      padding: 0.75rem;
-      border-radius: 0.75rem;
-      border: 1px solid var(--color-gray-medium);
-    }
-
-    /* Image preview border */
-    #imagePreview img {
-      border-radius: 0.5rem;
-      border: 1px solid var(--color-accent);
-    }
-
-    /* User avatar circle */
-    #userAvatar, #composerAvatar, article > div > div > div:first-child {
-      background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
-      color: #000;
-      font-weight: 700;
-      font-size: 1.15rem;
-      box-shadow: 0 0 10px var(--color-accent);
-      user-select: none;
-    }
-
-    /* Footer */
-    footer {
-      background-color: #0f172a;
-      border-top: 1px solid #2e3a59;
-      color: #94a3b8;
-      font-weight: 400;
-    }
-
-  </style>
 </head>
-<body class="min-h-screen text-gray-200">
-  <header class="sticky top-0">
-    <div class="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center font-extrabold text-xl select-none">MS</div>
-        <div class="text-xl font-semibold tracking-wide select-none">Mini Social</div>
-      </div>
-      <div class="flex items-center gap-4">
-        <div id="userInfo" class="hidden items-center gap-3 select-none">
-          <div id="userAvatar" class="w-10 h-10 rounded-full flex items-center justify-center"></div>
-          <div id="userName" class="text-base font-medium"></div>
-          <button id="btnLogout" class="ml-3 px-4 py-2 rounded-lg border border-gray-700 hover:border-accent hover:bg-accent hover:text-black transition">Logout</button>
-        </div>
-        <div id="authButtons" class="flex gap-3">
-          <button id="btnShowLogin" class="px-4 py-2 rounded-lg bg-accent text-black font-semibold hover:bg-accent-dark transition">Sign In</button>
-          <button id="btnShowRegister" class="px-4 py-2 rounded-lg border border-gray-700 hover:border-accent hover:bg-accent hover:text-black transition">Register</button>
-        </div>
-      </div>
+<body class="bg-gray-900 text-white font-sans">
+
+  <!-- Navbar -->
+  <nav class="bg-gray-800 p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Mini Social</h1>
+    <div id="user-info" class="hidden flex items-center space-x-3">
+      <img id="nav-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full" />
+      <span id="nav-name"></span>
+      <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded">Logout</button>
     </div>
-  </header>
+  </nav>
 
-  <main class="max-w-4xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <section class="lg:col-span-2 space-y-8">
-      <div id="composer" class="hidden bg-gray-900/70 border border-gray-700 rounded-2xl p-6 shadow-lg">
-        <div class="flex items-start gap-5">
-          <div id="composerAvatar" class="w-14 h-14 rounded-full flex items-center justify-center text-xl"></div>
-          <div class="flex-1">
-            <textarea id="postText" rows="4" placeholder="What's happening?" class="w-full resize-none placeholder-gray-500 focus:placeholder-gray-400"></textarea>
-            <div class="mt-4 flex items-center gap-4">
-              <label class="inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 cursor-pointer hover:bg-gray-700 transition select-none">
-                <input id="postImage" type="file" accept="image/*" class="hidden" />
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 008 0M15 15a4 4 0 008 0M8 7h8M5 12h14"/>
-                </svg>
-                <span class="text-sm text-gray-400">Add image</span>
-              </label>
-              <button id="btnPost" class="ml-auto bg-accent text-black px-5 py-2 rounded-lg font-semibold hover:bg-accent-dark transition">Post</button>
-            </div>
-            <div id="imagePreview" class="mt-5 hidden">
-              <img id="previewImg" class="max-h-52 rounded-lg border border-accent" alt="preview"/>
-              <button id="removePreview" class="mt-2 text-xs text-red-500 hover:text-red-400 font-semibold select-none">Remove</button>
-            </div>
-          </div>
-        </div>
+  <!-- Auth Section -->
+  <section id="auth-section" class="max-w-md mx-auto p-6 mt-10 bg-gray-800 rounded-lg shadow-lg">
+    <h2 class="text-2xl mb-4">Login</h2>
+    <input id="email" placeholder="Email" class="w-full mb-2 p-2 rounded bg-gray-700 text-white" />
+    <input id="password" type="password" placeholder="Password" class="w-full mb-4 p-2 rounded bg-gray-700 text-white" />
+    <button onclick="login()" class="w-full bg-blue-500 hover:bg-blue-600 p-2 rounded">Login</button>
+    <p class="mt-4 text-sm">No account? <a href="#" onclick="showRegister()" class="text-blue-400">Register here</a></p>
+  </section>
+
+  <!-- Register Section -->
+  <section id="register-section" class="hidden max-w-md mx-auto p-6 mt-10 bg-gray-800 rounded-lg shadow-lg">
+    <h2 class="text-2xl mb-4">Register</h2>
+    <input id="reg-name" placeholder="Name" class="w-full mb-2 p-2 rounded bg-gray-700 text-white" />
+    <input id="reg-handle" placeholder="Handle" class="w-full mb-2 p-2 rounded bg-gray-700 text-white" />
+    <input id="reg-email" placeholder="Email" class="w-full mb-2 p-2 rounded bg-gray-700 text-white" />
+    <input id="reg-password" type="password" placeholder="Password" class="w-full mb-4 p-2 rounded bg-gray-700 text-white" />
+    <input id="reg-avatar" type="file" class="w-full mb-4 text-white" />
+    <button onclick="register()" class="w-full bg-green-500 hover:bg-green-600 p-2 rounded">Register</button>
+    <p class="mt-4 text-sm">Have an account? <a href="#" onclick="showLogin()" class="text-blue-400">Login here</a></p>
+  </section>
+
+  <!-- Main Content -->
+  <main id="main-section" class="hidden max-w-5xl mx-auto mt-6 grid grid-cols-3 gap-6">
+    <!-- Feed -->
+    <div class="col-span-2">
+      <div class="bg-gray-800 p-4 rounded-lg mb-4">
+        <textarea id="post-text" placeholder="What's on your mind?" class="w-full p-2 rounded bg-gray-700 text-white mb-2"></textarea>
+        <input id="post-image" type="file" class="mb-2 text-white" />
+        <button onclick="createPost()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">Post</button>
       </div>
+      <div id="feed"></div>
+    </div>
 
-      <div id="feed" class="space-y-6"></div>
-    </section>
-
-    <aside class="space-y-8">
-      <div id="authCard" class="bg-gray-900/70 border border-gray-700 rounded-2xl p-6 shadow-lg">
-        <div id="loginForm" class="space-y-4">
-          <h3 class="font-semibold text-white text-lg">Log in</h3>
-          <input id="loginEmail" placeholder="Email" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50" />
-          <input id="loginPassword" type="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50"/>
-          <div class="flex gap-4">
-            <button id="btnLogin" class="flex-1 bg-accent text-black px-4 py-3 rounded-lg font-semibold hover:bg-accent-dark transition">Sign In</button>
-            <button id="showRegisterFromLogin" class="flex-1 border border-gray-700 px-4 py-3 rounded-lg hover:border-accent hover:bg-accent hover:text-black transition">Create</button>
-          </div>
-        </div>
-
-        <div id="registerForm" class="hidden space-y-4">
-          <h3 class="font-semibold text-white text-lg">Create an account</h3>
-          <input id="regName" placeholder="Full name" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50" />
-          <input id="regHandle" placeholder="Handle (no @)" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50" />
-          <input id="regEmail" placeholder="Email" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50" />
-          <input id="regPassword" type="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50" />
-          <div class="flex gap-4">
-            <button id="btnRegister" class="flex-1 bg-accent text-black px-4 py-3 rounded-lg font-semibold hover:bg-accent-dark transition">Create</button>
-            <button id="showLoginFromRegister" class="flex-1 border border-gray-700 px-4 py-3 rounded-lg hover:border-accent hover:bg-accent hover:text-black transition">Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-gray-900/70 border border-gray-700 rounded-2xl p-6 shadow-lg">
-        <h4 class="font-semibold text-white text-lg">Suggested</h4>
-        <div id="suggested" class="mt-4 space-y-4 text-sm text-gray-400" aria-live="polite" aria-atomic="true">
-          <!-- Suggested users with follow/unfollow buttons rendered here -->
-        </div>
-      </div>
-    </aside>
+    <!-- Suggested Users -->
+    <div>
+      <h3 class="text-lg mb-2">Suggested Users</h3>
+      <div id="suggested-users" class="space-y-3"></div>
+    </div>
   </main>
 
-  <footer class="text-center text-xs text-gray-500 py-6">Local demo • Connects to your backend</footer>
-
   <script>
-  // Your original script here (no changes needed for styling)
-  // Just add your existing JS code here
+    const API = '';
+    let token = localStorage.getItem('token');
+
+    if (token) {
+      showMain();
+      fetchFeed();
+      fetchSuggested();
+    }
+
+    function showRegister() {
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('register-section').classList.remove('hidden');
+    }
+    function showLogin() {
+      document.getElementById('register-section').classList.add('hidden');
+      document.getElementById('auth-section').classList.remove('hidden');
+    }
+    function showMain(user) {
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('register-section').classList.add('hidden');
+      document.getElementById('main-section').classList.remove('hidden');
+      document.getElementById('user-info').classList.remove('hidden');
+      if (user) {
+        document.getElementById('nav-avatar').src = API + user.avatar_url;
+        document.getElementById('nav-name').textContent = user.name;
+      }
+    }
+    function logout() {
+      localStorage.removeItem('token');
+      location.reload();
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const res = await fetch(API + '/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        showMain(data.user);
+        fetchFeed();
+        fetchSuggested();
+      } else {
+        alert(data.error || 'Login failed');
+      }
+    }
+
+    async function register() {
+      const form = new FormData();
+      form.append('name', document.getElementById('reg-name').value);
+      form.append('handle', document.getElementById('reg-handle').value);
+      form.append('email', document.getElementById('reg-email').value);
+      form.append('password', document.getElementById('reg-password').value);
+      const avatar = document.getElementById('reg-avatar').files[0];
+      if (avatar) form.append('avatar', avatar);
+      const res = await fetch(API + '/api/register', { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        showMain(data.user);
+        fetchFeed();
+        fetchSuggested();
+      } else {
+        alert(data.error || 'Register failed');
+      }
+    }
+
+    async function fetchFeed() {
+      const res = await fetch(API + '/api/posts');
+      const posts = await res.json();
+      const feed = document.getElementById('feed');
+      feed.innerHTML = '';
+      posts.forEach(p => {
+        feed.innerHTML += `
+          <div class="bg-gray-800 p-4 rounded-lg mb-4">
+            <div class="flex items-center mb-2">
+              <img src="${API + p.user_avatar}" class="w-8 h-8 rounded-full mr-2" />
+              <strong>${p.user_name}</strong> <span class="text-gray-400">@${p.user_handle}</span>
+            </div>
+            <p>${p.text || ''}</p>
+            ${p.image_url ? `<img src="${API + p.image_url}" class="mt-2 rounded"/>` : ''}
+            <div class="flex space-x-4 mt-2 text-sm text-gray-400">
+              <button onclick="likePost('${p.id}')">❤️ ${p.likes || 0}</button>
+              <span>💬 ${p.comment_count}</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    async function createPost() {
+      const form = new FormData();
+      form.append('text', document.getElementById('post-text').value);
+      const img = document.getElementById('post-image').files[0];
+      if (img) form.append('image', img);
+      const res = await fetch(API + '/api/posts', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') },
+        body: form
+      });
+      if (res.ok) {
+        document.getElementById('post-text').value = '';
+        document.getElementById('post-image').value = '';
+        fetchFeed();
+      }
+    }
+
+    async function likePost(id) {
+      const res = await fetch(API + '/api/posts/' + id + '/like', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+      });
+      if (res.ok) fetchFeed();
+    }
+
+    async function fetchSuggested() {
+      const res = await fetch(API + '/api/users/suggested');
+      const users = await res.json();
+      const container = document.getElementById('suggested-users');
+      container.innerHTML = '';
+      users.forEach(u => {
+        container.innerHTML += `
+          <div class="flex items-center space-x-3 bg-gray-800 p-2 rounded">
+            <img src="${API + u.avatar_url}" class="w-8 h-8 rounded-full" />
+            <div>
+              <strong>${u.name}</strong>
+              <p class="text-gray-400 text-sm">@${u.handle}</p>
+            </div>
+          </div>
+        `;
+      });
+    }
   </script>
+
 </body>
 </html>
