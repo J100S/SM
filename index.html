@@ -10,7 +10,10 @@
 <body class="min-h-screen text-gray-100">
   <header class="sticky top-0 bg-black/50 backdrop-blur border-b border-gray-800">
     <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-violet-600 text-black font-extrabold flex items-center justify-center">MS</div><div class="text-lg font-bold">Mini Social</div></div>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-violet-600 text-black font-extrabold flex items-center justify-center">MS</div>
+        <div class="text-lg font-bold">Mini Social</div>
+      </div>
       <div class="flex items-center gap-3">
         <div id="userInfo" class="hidden items-center gap-2">
           <div id="userAvatar" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-accent font-bold"></div>
@@ -39,7 +42,10 @@
               </label>
               <button id="btnPost" class="ml-auto bg-accent text-black px-4 py-2 rounded-lg font-semibold">Post</button>
             </div>
-            <div id="imagePreview" class="mt-3 hidden"><img id="previewImg" class="max-h-48 rounded-md border border-gray-800" alt="preview"/><button id="removePreview" class="mt-2 text-xs text-red-400">Remove</button></div>
+            <div id="imagePreview" class="mt-3 hidden">
+              <img id="previewImg" class="max-h-48 rounded-md border border-gray-800" alt="preview"/>
+              <button id="removePreview" class="mt-2 text-xs text-red-400">Remove</button>
+            </div>
           </div>
         </div>
       </div>
@@ -74,7 +80,9 @@
 
       <div class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
         <h4 class="font-semibold text-white">Suggested</h4>
-        <div id="suggested" class="mt-3 space-y-3 text-sm text-gray-300"></div>
+        <div id="suggested" class="mt-3 space-y-3 text-sm text-gray-300" aria-live="polite" aria-atomic="true">
+          <!-- Suggested users with follow/unfollow buttons rendered here -->
+        </div>
       </div>
     </aside>
   </main>
@@ -86,8 +94,9 @@
   const API_BASE = '';
   let token = localStorage.getItem('ms_token') || null;
   let currentUser = JSON.parse(localStorage.getItem('ms_user') || 'null');
+  let followings = new Set();
 
-  // DOM
+  // DOM Elements
   const authButtons = document.getElementById('authButtons');
   const userInfo = document.getElementById('userInfo');
   const userAvatar = document.getElementById('userAvatar');
@@ -119,6 +128,55 @@
   const loginEmail = document.getElementById('loginEmail');
   const loginPassword = document.getElementById('loginPassword');
 
+  const suggestedEl = document.getElementById('suggested');
+
+  // Helper Functions
+
+  function escapeHtml(s) {
+    return (s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  }
+
+  function timeAgo(iso) {
+    const d = new Date(iso);
+    const diff = Math.floor((Date.now() - d) / 1000);
+    if (diff < 60) return diff + 's';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+    return Math.floor(diff / 86400) + 'd';
+  }
+
+  // Auth UI toggles
+
+  function showSignedIn() {
+    authButtons.classList.add('hidden');
+    userInfo.classList.remove('hidden');
+    composer.classList.remove('hidden');
+    if (currentUser) {
+      userAvatar.textContent = (currentUser.name || currentUser.handle || '?')[0].toUpperCase();
+      userName.textContent = currentUser.name || currentUser.handle;
+    }
+  }
+
+  function showSignedOut() {
+    authButtons.classList.remove('hidden');
+    userInfo.classList.add('hidden');
+    composer.classList.add('hidden');
+  }
+
+  // Register / Login toggles
+
+  showRegisterFromLogin.addEventListener('click', () => {
+    loginForm.classList.add('hidden');
+    registerForm.classList.remove('hidden');
+  });
+
+  showLoginFromRegister.addEventListener('click', () => {
+    registerForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+  });
+
+  // Fetch posts and render
+
   async function fetchPosts() {
     try {
       const res = await fetch('/api/posts');
@@ -130,15 +188,6 @@
     }
   }
 
-  function timeAgo(iso) {
-    const d = new Date(iso);
-    const diff = Math.floor((Date.now()-d)/1000);
-    if (diff<60) return diff+'s';
-    if (diff<3600) return Math.floor(diff/60)+'m';
-    if (diff<86400) return Math.floor(diff/3600)+'h';
-    return Math.floor(diff/86400)+'d';
-  }
-
   function renderPosts(posts) {
     feedEl.innerHTML = '';
     posts.forEach(p => {
@@ -146,7 +195,7 @@
       el.className = 'bg-gray-900/40 border border-gray-800 rounded-xl p-4';
       el.innerHTML = `
         <div class="flex gap-3 items-start">
-          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-accent flex items-center justify-center text-black font-bold">${(p.user_name||p.user_handle||'?')[0].toUpperCase()}</div>
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-accent flex items-center justify-center text-black font-bold">${(p.user_name || p.user_handle || '?')[0].toUpperCase()}</div>
           <div class="flex-1">
             <div class="flex justify-between items-center">
               <div>
@@ -155,10 +204,10 @@
               </div>
               <div class="text-xs text-gray-400">${timeAgo(p.created_at)}</div>
             </div>
-            <p class="mt-2 text-gray-200 whitespace-pre-wrap">${escapeHtml(p.text||'')}</p>
-            ${p.image_url?`<img src="${p.image_url}" class="mt-3 rounded-md border border-gray-800 max-h-80 object-contain w-full"/>`:''}
+            <p class="mt-2 text-gray-200 whitespace-pre-wrap">${escapeHtml(p.text || '')}</p>
+            ${p.image_url ? `<img src="${p.image_url}" class="mt-3 rounded-md border border-gray-800 max-h-80 object-contain w-full"/>` : ''}
             <div class="mt-3 flex gap-3 text-sm">
-              <button data-action="like" class="px-3 py-1 rounded-full border border-gray-700 text-gray-300">Like <span class="ml-1 text-yellow-300">${p.likes||0}</span></button>
+              <button data-action="like" class="px-3 py-1 rounded-full border border-gray-700 text-gray-300">Like <span class="ml-1 text-yellow-300">${p.likes || 0}</span></button>
               <button data-action="comment" class="px-3 py-1 rounded-full border border-gray-700 text-gray-300">Comment</button>
             </div>
             <div class="mt-2 comments text-sm text-gray-300"></div>
@@ -168,7 +217,7 @@
       // attach like handler
       el.querySelector('button[data-action="like"]').addEventListener('click', async () => {
         if (!token) return alert('Sign in to like');
-        const res = await fetch('/api/posts/'+p.id+'/like',{method:'POST',headers:{'Authorization':'Bearer '+token}});
+        const res = await fetch('/api/posts/' + p.id + '/like', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
         if (!res.ok) return alert('Failed to like');
         const data = await res.json();
         el.querySelector('button[data-action="like"] span').textContent = data.likes;
@@ -177,83 +226,206 @@
     });
   }
 
-  function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+  // Followings fetch
 
-  // auth UI
-  function showSignedIn(){
-    authButtons.classList.add('hidden');
-    userInfo.classList.remove('hidden');
-    composer.classList.remove('hidden');
-    if (currentUser){
-      userAvatar.textContent = (currentUser.name||currentUser.handle||'?')[0].toUpperCase();
-      userName.textContent = currentUser.name || currentUser.handle;
+  async function fetchFollowings() {
+    if (!token) {
+      followings = new Set();
+      return;
+    }
+    try {
+      const res = await fetch('/api/followings', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error('Failed to load followings');
+      const users = await res.json();
+      followings = new Set(users.map(u => u.id));
+    } catch {
+      followings = new Set();
     }
   }
-  function showSignedOut(){
-    authButtons.classList.remove('hidden');
-    userInfo.classList.add('hidden');
-    composer.classList.add('hidden');
+
+  // Suggested users fetch and render with follow/unfollow buttons
+
+  async function fetchSuggested() {
+    if (!token) {
+      suggestedEl.innerHTML = '<p class="text-gray-500">Sign in to see suggested users.</p>';
+      return;
+    }
+
+    await fetchFollowings();
+
+    try {
+      const res = await fetch('/api/suggested', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error('Failed to load suggestions');
+      const users = await res.json();
+
+      if (users.length === 0) {
+        suggestedEl.innerHTML = '<p class="text-gray-500">No new users to follow.</p>';
+        return;
+      }
+
+      suggestedEl.innerHTML = '';
+      users.forEach(user => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'flex items-center justify-between';
+
+        const nameHandle = document.createElement('div');
+        nameHandle.innerHTML = `
+          <div class="font-semibold">${escapeHtml(user.name)}</div>
+          <div class="text-gray-400 text-xs">@${escapeHtml(user.handle)}</div>
+        `;
+
+        const btnFollow = document.createElement('button');
+        btnFollow.className = 'ml-2 px-2 py-1 rounded focus:outline focus:outline-2';
+
+        function updateButton(isFollowing) {
+          if (isFollowing) {
+            btnFollow.textContent = 'Unfollow';
+            btnFollow.classList.remove('bg-accent', 'text-black', 'hover:bg-accent/90');
+            btnFollow.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
+          } else {
+            btnFollow.textContent = 'Follow';
+            btnFollow.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700');
+            btnFollow.classList.add('bg-accent', 'text-black', 'hover:bg-accent/90');
+          }
+        }
+
+        let isFollowing = followings.has(user.id);
+        updateButton(isFollowing);
+
+        btnFollow.addEventListener('click', async () => {
+          btnFollow.disabled = true;
+          try {
+            if (isFollowing) {
+              // Unfollow
+              const res = await fetch(`/api/unfollow/${user.id}`, {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token },
+              });
+              if (!res.ok) throw new Error('Failed to unfollow');
+              followings.delete(user.id);
+            } else {
+              // Follow
+              const res = await fetch(`/api/follow/${user.id}`, {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token },
+              });
+              if (!res.ok) throw new Error('Failed to follow');
+              followings.add(user.id);
+            }
+            isFollowing = !isFollowing;
+            updateButton(isFollowing);
+            // Refresh suggested list to reflect changes
+            await fetchSuggested();
+          } catch {
+            alert(`Failed to ${isFollowing ? 'unfollow' : 'follow'} user`);
+            btnFollow.disabled = false;
+          }
+        });
+
+        userDiv.appendChild(nameHandle);
+        userDiv.appendChild(btnFollow);
+        suggestedEl.appendChild(userDiv);
+      });
+    } catch (err) {
+      suggestedEl.innerHTML = `<p class="text-red-500">${escapeHtml(err.message)}</p>`;
+    }
   }
 
-  // register/login toggles
-  showRegisterFromLogin.addEventListener('click', ()=>{ loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); });
-  showLoginFromRegister.addEventListener('click', ()=>{ registerForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
-
-  // register
+  // Register
   btnRegister.addEventListener('click', async () => {
     const payload = { name: regName.value.trim(), handle: regHandle.value.trim(), email: regEmail.value.trim(), password: regPassword.value };
-    if (!payload.name||!payload.handle||!payload.email||!payload.password) return alert('fill all');
+    if (!payload.name || !payload.handle || !payload.email || !payload.password) return alert('Fill all registration fields');
     try {
-      const res = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (!res.ok) return alert(data.error||'Register failed');
+      if (!res.ok) return alert(data.error || 'Register failed');
       token = data.token; currentUser = data.user;
-      localStorage.setItem('ms_token', token); localStorage.setItem('ms_user', JSON.stringify(currentUser));
-      showSignedIn(); fetchPosts();
-    } catch(e){ alert(e.message); }
+      localStorage.setItem('ms_token', token);
+      localStorage.setItem('ms_user', JSON.stringify(currentUser));
+      showSignedIn();
+      fetchPosts();
+      fetchSuggested();
+    } catch (e) { alert(e.message); }
   });
 
-  // login
+  // Login
   btnLogin.addEventListener('click', async () => {
     const payload = { email: loginEmail.value.trim(), password: loginPassword.value };
-    if (!payload.email||!payload.password) return alert('fill both');
+    if (!payload.email || !payload.password) return alert('Fill both login fields');
     try {
-      const res = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (!res.ok) return alert(data.error||'Login failed');
+      if (!res.ok) return alert(data.error || 'Login failed');
       token = data.token; currentUser = data.user;
-      localStorage.setItem('ms_token', token); localStorage.setItem('ms_user', JSON.stringify(currentUser));
-      showSignedIn(); fetchPosts();
-    } catch(e){ alert(e.message); }
+      localStorage.setItem('ms_token', token);
+      localStorage.setItem('ms_user', JSON.stringify(currentUser));
+      showSignedIn();
+      fetchPosts();
+      fetchSuggested();
+    } catch (e) { alert(e.message); }
   });
 
-  // posting
-  let selectedImage = null;
-  postImage.addEventListener('change', (e)=>{ selectedImage = e.target.files[0]; if (selectedImage){ previewImg.src = URL.createObjectURL(selectedImage); imagePreview.classList.remove('hidden'); }});
-  removePreview.addEventListener('click', ()=>{ selectedImage = null; previewImg.src=''; imagePreview.classList.add('hidden'); postImage.value=''; });
+  // Logout
+  btnLogout.addEventListener('click', () => {
+    token = null; currentUser = null;
+    localStorage.removeItem('ms_token');
+    localStorage.removeItem('ms_user');
+    showSignedOut();
+    feedEl.innerHTML = '';
+    suggestedEl.innerHTML = '<p class="text-gray-500">Sign in to see suggested users.</p>';
+  });
 
+  // Composer image preview
+  postImage.addEventListener('change', () => {
+    if (postImage.files.length > 0) {
+      const file = postImage.files[0];
+      previewImg.src = URL.createObjectURL(file);
+      imagePreview.classList.remove('hidden');
+    }
+  });
+  removePreview.addEventListener('click', () => {
+    postImage.value = '';
+    previewImg.src = '';
+    imagePreview.classList.add('hidden');
+  });
+
+  // Create post
   btnPost.addEventListener('click', async () => {
     if (!token) return alert('Sign in to post');
-    const text = postText.value.trim();
-    if (!text && !selectedImage) return alert('Write something or attach an image');
-    const form = new FormData();
-    form.append('text', text);
-    if (selectedImage) form.append('image', selectedImage);
+    if (!postText.value.trim() && postImage.files.length === 0) return alert('Write something or add an image');
+
+    const formData = new FormData();
+    formData.append('text', postText.value.trim());
+    if (postImage.files.length > 0) formData.append('image', postImage.files[0]);
+
     try {
-      const res = await fetch('/api/posts',{method:'POST',headers:{'Authorization':'Bearer '+token},body:form});
-      if (!res.ok) { const d = await res.json(); return alert(d.error||'Post failed'); }
-      postText.value=''; selectedImage=null; imagePreview.classList.add('hidden'); postImage.value='';
+      const res = await fetch('/api/posts', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: formData });
+      if (!res.ok) throw new Error('Failed to create post');
+      const post = await res.json();
+      postText.value = '';
+      postImage.value = '';
+      previewImg.src = '';
+      imagePreview.classList.add('hidden');
       fetchPosts();
-    } catch(e){ alert(e.message); }
+    } catch (e) {
+      alert(e.message);
+    }
   });
 
-  // init
-  token = localStorage.getItem('ms_token');
-  currentUser = JSON.parse(localStorage.getItem('ms_user') || 'null');
-  if (token && currentUser) showSignedIn(); else showSignedOut();
+  // Initial UI state
+  if (token && currentUser) {
+    showSignedIn();
+  } else {
+    showSignedOut();
+  }
   fetchPosts();
-
+  fetchSuggested();
 })();
 </script>
+
 </body>
 </html>
