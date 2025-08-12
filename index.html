@@ -100,111 +100,69 @@
   <footer class="text-center text-xs text-gray-500 py-6">Local demo • Connects to your backend</footer>
 
 <script>
-
 (() => {
   const API_BASE = '';
   let token = localStorage.getItem('ms_token') || null;
   let currentUser = JSON.parse(localStorage.getItem('ms_user') || 'null');
   let followings = new Set();
 
-  // DOM Elements
-  const authButtons = document.getElementById('authButtons');
-  const userInfo = document.getElementById('userInfo');
-  const userAvatar = document.getElementById('userAvatar');
-  const userName = document.getElementById('userName');
-  const btnLogout = document.getElementById('btnLogout');
-
-  const composer = document.getElementById('composer');
-  const postText = document.getElementById('postText');
-  const postImage = document.getElementById('postImage');
-  const btnPost = document.getElementById('btnPost');
-  const imagePreview = document.getElementById('imagePreview');
-  const previewImg = document.getElementById('previewImg');
-  const removePreview = document.getElementById('removePreview');
-
-  const feedEl = document.getElementById('feed');
-
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const btnLogin = document.getElementById('btnLogin');
-  const btnRegister = document.getElementById('btnRegister');
-  const showRegisterFromLogin = document.getElementById('showRegisterFromLogin');
-  const showLoginFromRegister = document.getElementById('showLoginFromRegister');
-
-  const regName = document.getElementById('regName');
-  const regHandle = document.getElementById('regHandle');
-  const regEmail = document.getElementById('regEmail');
-  const regPassword = document.getElementById('regPassword');
-
-  const loginEmail = document.getElementById('loginEmail');
-  const loginPassword = document.getElementById('loginPassword');
-
-  const suggestedEl = document.getElementById('suggested');
-
-  // Helper Functions
-
-  function escapeHtml(s) {
-    return (s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-  }
-
-  function timeAgo(iso) {
+  // Helper functions
+  const el = id => document.getElementById(id);
+  const escapeHtml = s => (s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const timeAgo = iso => {
     const d = new Date(iso);
     const diff = Math.floor((Date.now() - d) / 1000);
     if (diff < 60) return diff + 's';
     if (diff < 3600) return Math.floor(diff / 60) + 'm';
     if (diff < 86400) return Math.floor(diff / 3600) + 'h';
     return Math.floor(diff / 86400) + 'd';
-  }
+  };
+  const fetchJSON = async (url, opts = {}) => {
+    const res = await fetch(url, opts);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  };
 
-  // Auth UI toggles
+  // DOM
+  const feedEl = el('feed');
+  const authButtons = el('authButtons');
+  const userInfo = el('userInfo');
+  const userAvatar = el('userAvatar');
+  const userName = el('userName');
+  const composer = el('composer');
+  const postText = el('postText');
+  const postImage = el('postImage');
+  const btnPost = el('btnPost');
+  const imagePreview = el('imagePreview');
+  const previewImg = el('previewImg');
+  const removePreview = el('removePreview');
+  const suggestedEl = el('suggested');
 
-  function showSignedIn() {
+  // Save composer draft
+  postText.value = localStorage.getItem('ms_draft') || '';
+  postText.addEventListener('input', () => {
+    localStorage.setItem('ms_draft', postText.value);
+  });
+
+  // UI toggles
+  const showSignedIn = () => {
     authButtons.classList.add('hidden');
     userInfo.classList.remove('hidden');
     composer.classList.remove('hidden');
-    if (currentUser) {
-      userAvatar.textContent = (currentUser.name || currentUser.handle || '?')[0].toUpperCase();
-      userName.textContent = currentUser.name || currentUser.handle;
-    }
-  }
-
-  function showSignedOut() {
+    userAvatar.textContent = (currentUser.name || currentUser.handle || '?')[0].toUpperCase();
+    userName.textContent = currentUser.name || currentUser.handle;
+  };
+  const showSignedOut = () => {
     authButtons.classList.remove('hidden');
     userInfo.classList.add('hidden');
     composer.classList.add('hidden');
-  }
+  };
 
-  // Register / Login toggles
-
-  showRegisterFromLogin.addEventListener('click', () => {
-    loginForm.classList.add('hidden');
-    registerForm.classList.remove('hidden');
-  });
-
-  showLoginFromRegister.addEventListener('click', () => {
-    registerForm.classList.add('hidden');
-    loginForm.classList.remove('hidden');
-  });
-
-  // Fetch posts and render
-
-  async function fetchPosts() {
-    try {
-      const res = await fetch('/api/posts');
-      if (!res.ok) throw new Error('Failed to fetch posts');
-      const posts = await res.json();
-      renderPosts(posts);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
+  // Render feed
   function renderPosts(posts) {
-    feedEl.innerHTML = '';
-    posts.forEach(p => {
-      const el = document.createElement('article');
-      el.className = 'bg-gray-900/40 border border-gray-800 rounded-xl p-4';
-      el.innerHTML = `
+    feedEl.innerHTML = posts.map(p => `
+      <article data-id="${p.id}" class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
         <div class="flex gap-3 items-start">
           <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-accent flex items-center justify-center text-black font-bold">${(p.user_name || p.user_handle || '?')[0].toUpperCase()}</div>
           <div class="flex-1">
@@ -213,237 +171,116 @@
                 <div class="font-bold">${escapeHtml(p.user_name || p.user_handle)}</div>
                 <div class="text-gray-400 text-sm">@${escapeHtml(p.user_handle)}</div>
               </div>
-              <div class="text-xs text-gray-400">${timeAgo(p.created_at)}</div>
+              <div class="text-xs text-gray-400" title="${new Date(p.created_at).toLocaleString()}">${timeAgo(p.created_at)}</div>
             </div>
             <p class="mt-2 text-gray-200 whitespace-pre-wrap">${escapeHtml(p.text || '')}</p>
-            ${p.image_url ? `<img src="${p.image_url}" class="mt-3 rounded-md border border-gray-800 max-h-80 object-contain w-full"/>` : ''}
+            ${p.image_url ? `<img src="${p.image_url}" loading="lazy" class="mt-3 rounded-md border border-gray-800 max-h-80 object-contain w-full"/>` : ''}
             <div class="mt-3 flex gap-3 text-sm">
-              <button data-action="like" class="px-3 py-1 rounded-full border border-gray-700 text-gray-300">Like <span class="ml-1 text-yellow-300">${p.likes || 0}</span></button>
-              <button data-action="comment" class="px-3 py-1 rounded-full border border-gray-700 text-gray-300">Comment</button>
+              <button data-action="like" class="px-3 py-1 rounded-full border border-gray-700">Like <span class="ml-1 text-yellow-300">${p.likes || 0}</span></button>
+              <button data-action="comment" class="px-3 py-1 rounded-full border border-gray-700">Comment</button>
+              ${currentUser && currentUser.id === p.user_id ? `<button data-action="delete" class="px-3 py-1 rounded-full border border-red-700 text-red-400">Delete</button>` : ''}
             </div>
             <div class="mt-2 comments text-sm text-gray-300"></div>
           </div>
         </div>
-      `;
-      // attach like handler
-      el.querySelector('button[data-action="like"]').addEventListener('click', async () => {
-        if (!token) return alert('Sign in to like');
-        const res = await fetch('/api/posts/' + p.id + '/like', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) return alert('Failed to like');
-        const data = await res.json();
-        el.querySelector('button[data-action="like"] span').textContent = data.likes;
-      });
-      feedEl.appendChild(el);
-    });
+      </article>
+    `).join('');
   }
 
-  // Followings fetch
-
-  async function fetchFollowings() {
-    if (!token) {
-      followings = new Set();
-      return;
-    }
-    try {
-      const res = await fetch('/api/followings', {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      if (!res.ok) throw new Error('Failed to load followings');
-      const users = await res.json();
-      followings = new Set(users.map(u => u.id));
-    } catch {
-      followings = new Set();
-    }
-  }
-
-  // Suggested users fetch and render with follow/unfollow buttons
-
-  async function fetchSuggested() {
-    if (!token) {
-      suggestedEl.innerHTML = '<p class="text-gray-500">Sign in to see suggested users.</p>';
-      return;
-    }
-
-    await fetchFollowings();
+  // Event delegation for post actions
+  feedEl.addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const post = btn.closest('[data-id]');
+    const postId = post.dataset.id;
+    const action = btn.dataset.action;
 
     try {
-      const res = await fetch('/api/suggested', {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      if (!res.ok) throw new Error('Failed to load suggestions');
-      const users = await res.json();
-
-      if (users.length === 0) {
-        suggestedEl.innerHTML = '<p class="text-gray-500">No new users to follow.</p>';
-        return;
+      if (action === 'like') {
+        const span = btn.querySelector('span');
+        span.textContent = parseInt(span.textContent) + 1; // instant increment
+        const data = await fetchJSON(`/api/posts/${postId}/like`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+        span.textContent = data.likes;
       }
-
-      suggestedEl.innerHTML = '';
-      users.forEach(user => {
-        const userDiv = document.createElement('div');
-        userDiv.className = 'flex items-center justify-between';
-
-        const nameHandle = document.createElement('div');
-        nameHandle.innerHTML = `
-          <div class="font-semibold">${escapeHtml(user.name)}</div>
-          <div class="text-gray-400 text-xs">@${escapeHtml(user.handle)}</div>
+      if (action === 'delete') {
+        if (!confirm('Delete this post?')) return;
+        await fetchJSON(`/api/posts/${postId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      }
+      if (action === 'comment') {
+        const commentsDiv = post.querySelector('.comments');
+        const form = document.createElement('div');
+        form.innerHTML = `
+          <input type="text" class="bg-gray-800 border border-gray-700 rounded px-2 py-1 w-full" placeholder="Write a comment..."/>
+          <button class="mt-1 px-3 py-1 rounded bg-accent text-black">Send</button>
         `;
-
-        const btnFollow = document.createElement('button');
-        btnFollow.className = 'ml-2 px-2 py-1 rounded focus:outline focus:outline-2';
-
-        function updateButton(isFollowing) {
-          if (isFollowing) {
-            btnFollow.textContent = 'Unfollow';
-            btnFollow.classList.remove('bg-accent', 'text-black', 'hover:bg-accent/90');
-            btnFollow.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
-          } else {
-            btnFollow.textContent = 'Follow';
-            btnFollow.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700');
-            btnFollow.classList.add('bg-accent', 'text-black', 'hover:bg-accent/90');
-          }
-        }
-
-        let isFollowing = followings.has(user.id);
-        updateButton(isFollowing);
-
-        btnFollow.addEventListener('click', async () => {
-          btnFollow.disabled = true;
-          try {
-            if (isFollowing) {
-              // Unfollow
-              const res = await fetch(`/api/unfollow/${user.id}`, {
-                method: 'POST',
-                headers: { Authorization: 'Bearer ' + token },
-              });
-              if (!res.ok) throw new Error('Failed to unfollow');
-              followings.delete(user.id);
-            } else {
-              // Follow
-              const res = await fetch(`/api/follow/${user.id}`, {
-                method: 'POST',
-                headers: { Authorization: 'Bearer ' + token },
-              });
-              if (!res.ok) throw new Error('Failed to follow');
-              followings.add(user.id);
-            }
-            isFollowing = !isFollowing;
-            updateButton(isFollowing);
-            // Refresh suggested list to reflect changes
-            await fetchSuggested();
-          } catch {
-            alert(`Failed to ${isFollowing ? 'unfollow' : 'follow'} user`);
-            btnFollow.disabled = false;
-          }
+        commentsDiv.innerHTML = '';
+        commentsDiv.appendChild(form);
+        const input = form.querySelector('input');
+        const sendBtn = form.querySelector('button');
+        sendBtn.addEventListener('click', async () => {
+          if (!input.value.trim()) return;
+          await fetchJSON(`/api/posts/${postId}/comment`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: input.value.trim() })
+          });
+          input.value = '';
         });
-
-        userDiv.appendChild(nameHandle);
-        userDiv.appendChild(btnFollow);
-        suggestedEl.appendChild(userDiv);
-      });
+      }
     } catch (err) {
-      suggestedEl.innerHTML = `<p class="text-red-500">${escapeHtml(err.message)}</p>`;
+      alert(err.message);
     }
-  }
-
-  // Register
-  btnRegister.addEventListener('click', async () => {
-    const payload = { name: regName.value.trim(), handle: regHandle.value.trim(), email: regEmail.value.trim(), password: regPassword.value };
-    if (!payload.name || !payload.handle || !payload.email || !payload.password) return alert('Fill all registration fields');
-    try {
-      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const data = await res.json();
-      if (!res.ok) return alert(data.error || 'Register failed');
-      token = data.token; currentUser = data.user;
-      localStorage.setItem('ms_token', token);
-      localStorage.setItem('ms_user', JSON.stringify(currentUser));
-      showSignedIn();
-      fetchPosts();
-      fetchSuggested();
-    } catch (e) { alert(e.message); }
   });
 
-  // Login
-  btnLogin.addEventListener('click', async () => {
-    const payload = { email: loginEmail.value.trim(), password: loginPassword.value };
-    if (!payload.email || !payload.password) return alert('Fill both login fields');
-    try {
-      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const data = await res.json();
-      if (!res.ok) return alert(data.error || 'Login failed');
-      token = data.token; currentUser = data.user;
-      localStorage.setItem('ms_token', token);
-      localStorage.setItem('ms_user', JSON.stringify(currentUser));
-      showSignedIn();
-      fetchPosts();
-      fetchSuggested();
-    } catch (e) { alert(e.message); }
-  });
-
-  // Logout
-  btnLogout.addEventListener('click', () => {
-    token = null; currentUser = null;
-    localStorage.removeItem('ms_token');
-    localStorage.removeItem('ms_user');
-    showSignedOut();
-    feedEl.innerHTML = '';
-    suggestedEl.innerHTML = '<p class="text-gray-500">Sign in to see suggested users.</p>';
-  });
-
-  // Composer image preview
+  // Composer image preview with file size
   postImage.addEventListener('change', () => {
-    if (postImage.files.length > 0) {
+    if (postImage.files.length) {
       const file = postImage.files[0];
+      if (file.size > 5 * 1024 * 1024) alert('Image too large (>5MB)');
       previewImg.src = URL.createObjectURL(file);
+      previewImg.onload = () => URL.revokeObjectURL(previewImg.src);
       imagePreview.classList.remove('hidden');
     }
   });
   removePreview.addEventListener('click', () => {
     postImage.value = '';
-    previewImg.src = '';
     imagePreview.classList.add('hidden');
   });
 
   // Create post
   btnPost.addEventListener('click', async () => {
-    if (!token) return alert('Sign in to post');
     if (!postText.value.trim() && postImage.files.length === 0) return alert('Write something or add an image');
-
     const formData = new FormData();
     formData.append('text', postText.value.trim());
-    if (postImage.files.length > 0) formData.append('image', postImage.files[0]);
-
-    try {
-      const res = await fetch('/api/posts', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: formData });
-      if (!res.ok) throw new Error('Failed to create post');
-      const post = await res.json();
-      postText.value = '';
-      postImage.value = '';
-      previewImg.src = '';
-      imagePreview.classList.add('hidden');
-      fetchPosts();
-    } catch (e) {
-      alert(e.message);
-    }
+    if (postImage.files.length) formData.append('image', postImage.files[0]);
+    await fetchJSON('/api/posts', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+    postText.value = '';
+    postImage.value = '';
+    localStorage.removeItem('ms_draft');
+    imagePreview.classList.add('hidden');
   });
 
-    // Initial UI state
-  if (token && currentUser) {
-    showSignedIn();
-  } else {
-    showSignedOut();
-  }
+  // Fetch posts
+  const fetchPosts = async () => {
+    try {
+      const posts = await fetchJSON('/api/posts');
+      renderPosts(posts);
+    } catch (err) { console.error(err); }
+  };
+
+  // Initial UI
+  if (token && currentUser) showSignedIn(); else showSignedOut();
   fetchPosts();
-  fetchSuggested();
 
-  // Auto-refresh feed and suggested users every 5 seconds
+  // Magic 250ms interval
   setInterval(() => {
-    fetchPosts();
-    fetchSuggested();
+    if (document.visibilityState === 'visible') {
+      fetchPosts();
+    }
   }, 250);
-
 })();
 </script>
+
 
 </body>
 </html>
