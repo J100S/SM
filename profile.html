@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+<nav class="bg-slate-800 p-4 flex items-center justify-between">
+  <div class="text-xl font-bold text-sky-400 cursor-pointer" onclick="goHome()">Mini Social</div>
+  <button class="bg-slate-700 px-3 py-1 rounded hover:bg-slate-600" onclick="goBack()">Back</button>
+</nav>
+
+<main class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+
+  <section id="profile-info" class="bg-slate-800 rounded p-6 flex items-center gap-6">
+    <img id="profile-avatar" class="w-24 h-24 rounded-full" src="" alt="avatar" />
+    <div>
+      <h1 id="profile-name" class="text-3xl font-semibold"></h1>
+      <div id="profile-handle" class="text-sky-400 text-lg mb-2"></div>
+      <div class="flex gap-6 text-slate-300">
+        <div><span id="follower-count" class="font-semibold"></span> Followers</div>
+        <div><span id="following-count" class="font-semibold"></span> Following</div>
+      </div>
+      <button id="follow-btn" class="mt-4 bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded font-semibold" onclick="toggleFollow()"></button>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-2xl font-semibold mb-4">Posts</h2>
+    <div id="posts-container" class="space-y-6"></div>
+  </section>
+
+</main>
+
+<script>
+const API = '';
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
+function goHome() {
+  window.location.href = '/';
+}
+function goBack() {
+  window.history.back();
+}
+
+// Extract handle from URL query param
+const urlParams = new URLSearchParams(window.location.search);
+const profileHandle = urlParams.get('handle');
+
+let profileUser = null;
+let loggedInUser = null;
+let loggedInToken = null;
+
+// Load logged-in user info
+function loadLoggedInUser() {
+  loggedInToken = localStorage.getItem('token');
+  loggedInUser = JSON.parse(localStorage.getItem('user') || 'null');
+}
+
+// Fetch profile user info + follower/following counts + follow status
+async function fetchProfile() {
+  if (!profileHandle) {
+    alert('No user handle specified.');
+    return;
+  }
+
+  try {
+    // Fetch user by handle
+    const resUser = await fetch(API + '/api/users/handle/' + encodeURIComponent(profileHandle));
+    if (!resUser.ok) throw new Error('User not found');
+    profileUser = await resUser.json();
+
+    document.getElementById('profile-avatar').src = profileUser.avatar_url ? API + profileUser.avatar_url : '/uploads/default.png';
+    document.getElementById('profile-name').textContent = profileUser.name;
+    document.getElementById('profile-handle').textContent = '@' + profileUser.handle;
+
+    // Fetch follower count
+    const resFollowers = await fetch(API + '/api/users/' + profileUser.id + '/followers');
+    const followers = resFollowers.ok ? await resFollowers.json() : [];
+    document.getElementById('follower-count').textContent = followers.length;
+
+    // Fetch following count
+    const resFollowing = await fetch(API + '/api/users/' + profileUser.id + '/following');
+    const following = resFollowing.ok ? await resFollowing.json() : [];
+    document.getElementById('following-count').textContent = following.length;
+
+    // Set follow button text if logged in and not own profile
+    if (loggedInUser && loggedInUser.id !== profileUser.id) {
+      const resFollowingStatus = await fetch(API + '/api/users/' + profileUser.id + '/is_followed', {
+        headers: { 'Authorization': 'Bearer ' + loggedInToken }
+      });
+      let isFollowing = false;
+      if (resFollowingStatus.ok) {
+        const data = await resFollowingStatus.json();
+        isFollowing = data.is_following;
+      }
+      updateFollowBtn(isFollowing);
+      document.getElementById('follow-btn').style.display = 'inline-block';
+    } else {
+      document.getElementById('follow-btn').style.display = 'none';
+    }
+
+  } catch (e) {
+    alert(e.message);
+    console.error(e);
+  }
+}
+
+function updateFollowBtn(isFollowing) {
+  const btn = document.getElementById('follow-btn');
+  btn.textContent = isFollowing ? 'Unfollow' : 'Follow';
+  btn.dataset.following = isFollowing ? 'true' : 'false';
+}
+
+// Toggle follow/unfollow
+async function toggleFollow() {
+  const btn = document.getElementById('follow-btn');
+  btn.disabled = true;
+  try {
+    if (!loggedInToken) {
+      alert('Please log in to follow users');
+      btn.disabled = false;
+      return;
+    }
+    const res = await fetch(API + '/api/users/' + profileUser.id + '/follow', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + loggedInToken }
+    });
+    if (!res.ok) throw new Error('Failed to toggle follow');
+    const data = await res.json();
+    updateFollowBtn(data.following);
+    // Update follower count visually (+/-)
+    let countElem = document.getElementById('follower-count');
+    let count = parseInt(countElem.textContent) || 0;
+    if (data.following) count++;
+    else count--;
+    countElem.textContent = count < 0 ? 0 : count;
+  } catch (e) {
+    alert(e.message);
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+// Fetch posts by this user
+async function fetchPosts() {
+  try {
+    const token = loggedInToken;
+    const headers = {};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    const res = await fetch(API + '/api/posts?user_id=' + encodeURIComponent(profileUser.id), { headers });
+    if (!res.ok) throw new Error('Failed to load posts');
+    const posts = await res.json();
+
+    const container = document.getElementById('posts-container');
+    container.innerHTML = '';
+
+    posts.forEach(p => {
+      const avatar = p.user_avatar ? API + p.user_avatar : '/uploads/default.png';
+      const imageMark = p.image_url ? `<img src="${API + p.image_url}" class="mt-3 rounded max-h-96 object-cover w-full" alt="post image"/>` : '';
+      container.insertAdjacentHTML('beforeend', `
+        <article class="bg-slate-800 p-4 rounded">
+          <div class="flex items-center gap-3">
+            <img src="${avatar}" alt="avatar" class="w-10 h-10 rounded-full"/>
+            <div>
+              <div class="font-semibold text-slate-200">${escapeHtml(p.user_name)}</div>
+              <div class="text-sm text-sky-400">@${escapeHtml(p.user_handle)}</div>
+            </div>
+          </div>
+          <div class="mt-3 text-slate-200 whitespace-pre-wrap">${escapeHtml(p.text || '')}</div>
+          ${imageMark}
+          <div class="mt-3 text-xs text-slate-400">${new Date(p.created_at).toLocaleString()}</div>
+        </article>
+      `);
+    });
+
+  } catch (e) {
+    alert('Error loading posts');
+    console.error(e);
+  }
+}
+
+// On page load
+window.onload = async () => {
+  if (!profileHandle) {
+    alert('No profile specified.');
+    return;
+  }
+  loadLoggedInUser();
+  await fetchProfile();
+  if (profileUser) await fetchPosts();
+};
+</script>
+
+</body>
+</html>
