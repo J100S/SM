@@ -416,7 +416,7 @@
     }
   });
 
-  // Initial UI state
+    // Initial UI state
   if (token && currentUser) {
     showSignedIn();
   } else {
@@ -424,6 +424,13 @@
   }
   fetchPosts();
   fetchSuggested();
+
+  // Auto-refresh feed and suggested users every 5 seconds
+  setInterval(() => {
+    fetchPosts();
+    fetchSuggested();
+  }, 5000);
+
 })();
 </script>
 
