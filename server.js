@@ -291,6 +291,37 @@ app.get('/api/users/:id/following', async (req, res) => {
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
+// Get user profile by handle with follower/following counts and their posts
+app.get('/api/users/handle/:handle', async (req, res) => {
+  try {
+    const handle = req.params.handle;
+    const user = await getAsync('SELECT id, name, handle, avatar_url, created_at FROM users WHERE handle = ?', [handle]);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // follower count
+    const followerCountRow = await getAsync('SELECT COUNT(*) AS count FROM follows WHERE following_id = ?', [user.id]);
+    const followingCountRow = await getAsync('SELECT COUNT(*) AS count FROM follows WHERE follower_id = ?', [user.id]);
+
+    // get user's posts (latest 20)
+    const posts = await allAsync(`
+      SELECT p.*, 
+        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count,
+        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes
+      FROM posts p WHERE p.user_id = ?
+      ORDER BY p.created_at DESC LIMIT 20
+    `, [user.id]);
+
+    res.json({
+      user,
+      followerCount: followerCountRow?.count || 0,
+      followingCount: followingCountRow?.count || 0,
+      posts,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // -------------------- Tables --------------------
 (async function ensureTables() {
   await runAsync(`CREATE TABLE IF NOT EXISTS users (
