@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mini Social</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{background:linear-gradient(180deg,#071024,#05060a);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}</style>
+</head>
+<body class="min-h-screen text-gray-100">
+  <header class="sticky top-0 bg-black/50 backdrop-blur border-b border-gray-800">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-violet-600 text-black font-extrabold flex items-center justify-center">MS</div><div class="text-lg font-bold">Mini Social</div></div>
+      <div class="flex items-center gap-3">
+        <div id="userInfo" class="hidden items-center gap-2">
+          <div id="userAvatar" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-accent font-bold"></div>
+          <div id="userName" class="text-sm"></div>
+          <button id="btnLogout" class="ml-2 px-3 py-1 rounded border border-gray-700">Logout</button>
+        </div>
+        <div id="authButtons" class="flex gap-2">
+          <button id="btnShowLogin" class="px-3 py-1 rounded bg-accent text-black">Sign In</button>
+          <button id="btnShowRegister" class="px-3 py-1 rounded border border-gray-700">Register</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="lg:col-span-2 space-y-6">
+      <div id="composer" class="hidden bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <div id="composerAvatar" class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-accent flex items-center justify-center text-black font-bold">U</div>
+          <div class="flex-1">
+            <textarea id="postText" rows="3" class="w-full bg-transparent resize-none placeholder-gray-400 focus:outline-none" placeholder="What's happening?"></textarea>
+            <div class="mt-3 flex items-center gap-3">
+              <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 cursor-pointer">
+                <input id="postImage" type="file" accept="image/*" class="hidden" />
+                <span class="text-sm text-gray-300">Add image</span>
+              </label>
+              <button id="btnPost" class="ml-auto bg-accent text-black px-4 py-2 rounded-lg font-semibold">Post</button>
+            </div>
+            <div id="imagePreview" class="mt-3 hidden"><img id="previewImg" class="max-h-48 rounded-md border border-gray-800" alt="preview"/><button id="removePreview" class="mt-2 text-xs text-red-400">Remove</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="feed" class="space-y-4"></div>
+    </section>
+
+    <aside class="space-y-4">
+      <div id="authCard" class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+        <div id="loginForm" class="space-y-3">
+          <h3 class="font-semibold text-white">Log in</h3>
+          <input id="loginEmail" placeholder="Email" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
+          <input id="loginPassword" type="password" placeholder="Password" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
+          <div class="flex gap-2">
+            <button id="btnLogin" class="flex-1 bg-accent text-black px-3 py-2 rounded-lg font-semibold">Sign In</button>
+            <button id="showRegisterFromLogin" class="flex-1 border border-gray-700 px-3 py-2 rounded-lg">Create</button>
+          </div>
+        </div>
+
+        <div id="registerForm" class="hidden space-y-3">
+          <h3 class="font-semibold text-white">Create an account</h3>
+          <input id="regName" placeholder="Full name" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
+          <input id="regHandle" placeholder="Handle (no @)" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
+          <input id="regEmail" placeholder="Email" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
+          <input id="regPassword" type="password" placeholder="Password" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"/>
+          <div class="flex gap-2">
+            <button id="btnRegister" class="flex-1 bg-accent text-black px-3 py-2 rounded-lg font-semibold">Create</button>
+            <button id="showLoginFromRegister" class="flex-1 border border-gray-700 px-3 py-2 rounded-lg">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+        <h4 class="font-semibold text-white">Suggested</h4>
+        <div id="suggested" class="mt-3 space-y-3 text-sm text-gray-300"></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="text-center text-xs text-gray-500 py-6">Local demo • Connects to your backend</footer>
+
+<script>
+(() => {
+  const API_BASE = '';
+  let token = localStorage.getItem('ms_token') || null;
+  let currentUser = JSON.parse(localStorage.getItem('ms_user') || 'null');
+
+  // DOM
+  const authButtons = document.getElementById('authButtons');
+  const userInfo = document.getElementById('userInfo');
+  const userAvatar = document.getElementById('userAvatar');
+  const userName = document.getElementById('userName');
+  const btnLogout = document.getElementById('btnLogout');
+
+  const composer = document.getElementById('composer');
+  const postText = document.getElementById('postText');
+  const postImage = document.getElementById('postImage');
+  const btnPost = document.getElementById('btnPost');
+  const imagePreview = document.getElementById('imagePreview');
+  const previewImg = document.getElementById('previewImg');
+  const removePreview = document.getElementById('removePreview');
+
+  const feedEl = document.getElementById('feed');
+
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const btnLogin = document.getElementById('btnLogin');
+  const btnRegister = document.getElementById('btnRegister');
+  const showRegisterFromLogin = document.getElementById('showRegisterFromLogin');
+  const showLoginFromRegister = document.getElementById('showLoginFromRegister');
+
+  const regName = document.getElementById('regName');
+  const regHandle = document.getElementById('regHandle');
+  const regEmail = document.getElementById('regEmail');
+  const regPassword = document.getElementById('regPassword');
+
+  const loginEmail = document.getElementById('loginEmail');
+  const loginPassword = document.getElementById('loginPassword');
+
+  async function fetchPosts() {
+    try {
+      const res = await fetch('/api/posts');
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      const posts = await res.json();
+      renderPosts(posts);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function timeAgo(iso) {
+    const d = new Date(iso);
+    const diff = Math.floor((Date.now()-d)/1000);
+    if (diff<60) return diff+'s';
+    if (diff<3600) return Math.floor(diff/60)+'m';
+    if (diff<86400) return Math.floor(diff/3600)+'h';
+    return Math.floor(diff/86400)+'d';
+  }
+
+  function renderPosts(posts) {
+    feedEl.innerHTML = '';
+    posts.forEach(p => {
+      const el = document.createElement('article');
+      el.className = 'bg-gray-900/40 border border-gray-800 rounded-xl p-4';
+      el.innerHTML = `
+        <div class="flex gap-3 items-start">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-accent flex items-center justify-center text-black font-bold">${(p.user_name||p.user_handle||'?')[0].toUpperCase()}</div>
+          <div class="flex-1">
+            <div class="flex justify-between items-center">
+              <div>
+                <div class="font-bold">${escapeHtml(p.user_name || p.user_handle)}</div>
+                <div class="text-gray-400 text-sm">@${escapeHtml(p.user_handle)}</div>
+              </div>
+              <div class="text-xs text-gray-400">${timeAgo(p.created_at)}</div>
+            </div>
+            <p class="mt-2 text-gray-200 whitespace-pre-wrap">${escapeHtml(p.text||'')}</p>
+            ${p.image_url?`<img src="${p.image_url}" class="mt-3 rounded-md border border-gray-800 max-h-80 object-contain w-full"/>`:''}
+            <div class="mt-3 flex gap-3 text-sm">
+              <button data-action="like" class="px-3 py-1 rounded-full border border-gray-700 text-gray-300">Like <span class="ml-1 text-yellow-300">${p.likes||0}</span></button>
+              <button data-action="comment" class="px-3 py-1 rounded-full border border-gray-700 text-gray-300">Comment</button>
+            </div>
+            <div class="mt-2 comments text-sm text-gray-300"></div>
+          </div>
+        </div>
+      `;
+      // attach like handler
+      el.querySelector('button[data-action="like"]').addEventListener('click', async () => {
+        if (!token) return alert('Sign in to like');
+        const res = await fetch('/api/posts/'+p.id+'/like',{method:'POST',headers:{'Authorization':'Bearer '+token}});
+        if (!res.ok) return alert('Failed to like');
+        const data = await res.json();
+        el.querySelector('button[data-action="like"] span').textContent = data.likes;
+      });
+      feedEl.appendChild(el);
+    });
+  }
+
+  function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+  // auth UI
+  function showSignedIn(){
+    authButtons.classList.add('hidden');
+    userInfo.classList.remove('hidden');
+    composer.classList.remove('hidden');
+    if (currentUser){
+      userAvatar.textContent = (currentUser.name||currentUser.handle||'?')[0].toUpperCase();
+      userName.textContent = currentUser.name || currentUser.handle;
+    }
+  }
+  function showSignedOut(){
+    authButtons.classList.remove('hidden');
+    userInfo.classList.add('hidden');
+    composer.classList.add('hidden');
+  }
+
+  // register/login toggles
+  showRegisterFromLogin.addEventListener('click', ()=>{ loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); });
+  showLoginFromRegister.addEventListener('click', ()=>{ registerForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
+
+  // register
+  btnRegister.addEventListener('click', async () => {
+    const payload = { name: regName.value.trim(), handle: regHandle.value.trim(), email: regEmail.value.trim(), password: regPassword.value };
+    if (!payload.name||!payload.handle||!payload.email||!payload.password) return alert('fill all');
+    try {
+      const res = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data = await res.json();
+      if (!res.ok) return alert(data.error||'Register failed');
+      token = data.token; currentUser = data.user;
+      localStorage.setItem('ms_token', token); localStorage.setItem('ms_user', JSON.stringify(currentUser));
+      showSignedIn(); fetchPosts();
+    } catch(e){ alert(e.message); }
+  });
+
+  // login
+  btnLogin.addEventListener('click', async () => {
+    const payload = { email: loginEmail.value.trim(), password: loginPassword.value };
+    if (!payload.email||!payload.password) return alert('fill both');
+    try {
+      const res = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data = await res.json();
+      if (!res.ok) return alert(data.error||'Login failed');
+      token = data.token; currentUser = data.user;
+      localStorage.setItem('ms_token', token); localStorage.setItem('ms_user', JSON.stringify(currentUser));
+      showSignedIn(); fetchPosts();
+    } catch(e){ alert(e.message); }
+  });
+
+  // posting
+  let selectedImage = null;
+  postImage.addEventListener('change', (e)=>{ selectedImage = e.target.files[0]; if (selectedImage){ previewImg.src = URL.createObjectURL(selectedImage); imagePreview.classList.remove('hidden'); }});
+  removePreview.addEventListener('click', ()=>{ selectedImage = null; previewImg.src=''; imagePreview.classList.add('hidden'); postImage.value=''; });
+
+  btnPost.addEventListener('click', async () => {
+    if (!token) return alert('Sign in to post');
+    const text = postText.value.trim();
+    if (!text && !selectedImage) return alert('Write something or attach an image');
+    const form = new FormData();
+    form.append('text', text);
+    if (selectedImage) form.append('image', selectedImage);
+    try {
+      const res = await fetch('/api/posts',{method:'POST',headers:{'Authorization':'Bearer '+token},body:form});
+      if (!res.ok) { const d = await res.json(); return alert(d.error||'Post failed'); }
+      postText.value=''; selectedImage=null; imagePreview.classList.add('hidden'); postImage.value='';
+      fetchPosts();
+    } catch(e){ alert(e.message); }
+  });
+
+  // init
+  token = localStorage.getItem('ms_token');
+  currentUser = JSON.parse(localStorage.getItem('ms_user') || 'null');
+  if (token && currentUser) showSignedIn(); else showSignedOut();
+  fetchPosts();
+
+})();
+</script>
+</body>
+</html>
